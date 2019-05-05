@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_outer_classname = "ClientProto";
+
+package GrupoB.gRPCService.ClientProto;
+
+service ClientProto {
+    rpc join (NodeJoin) returns (NetworkInfo) {}
+}
+
+message NodeJoin {
+    string address = 1;
+}
+
+message NetworkInfo {
+    string nodeID = 1;
+    repeated NodeInfo peers = 2;
+}
+
+message NodeInfo {
+    string address = 1;
+    string nodeID = 2;
+}
