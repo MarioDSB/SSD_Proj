@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_outer_classname = "ServerProto";
+
+package GrupoB.gRPCService.ServerProto;
+
+service Server {
+    rpc join (NodeJoin) returns (NetworkInfo) {}
+    rpc ping (EmptyMessage) returns (BooleanMessage) {}
+}
+
+message NodeJoin {
+    string address = 1;
+    int32 port = 2;
+}
+
+message NetworkInfo {
+    string nodeID = 1;
+    repeated NodeInfo peers = 2;
+}
+
+message NodeInfo {
+    string address = 1;
+    int32 port = 2;
+    string nodeID = 3;
+}
+
+message EmptyMessage {
+}
+
+message BooleanMessage {
+    bool result = 1;
+}
