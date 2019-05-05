@@ -5,8 +5,7 @@ option java_outer_classname = "ClientProto";
 
 package GrupoB.gRPCService.ClientProto;
 
-service ClientProto {
-    rpc join (NodeJoin) returns (NetworkInfo) {}
+service Client {
     rpc ping (EmptyMessage) returns (BooleanMessage) {}
     rpc store (BlockData) returns (EmptyMessage) {}
 }

@@ -6,12 +6,12 @@
 
     <groupId>GrupoB</groupId>
     <artifactId>SSD_Proj</artifactId>
+    <packaging>jar</packaging>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
         <compileSource>1.8</compileSource>
     </properties>
-
 
     <dependencies>
         <dependency>
@@ -124,6 +124,4 @@
 
         </plugins>
     </build>
-
-
 </project>
