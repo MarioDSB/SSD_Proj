@@ -10,22 +10,6 @@ service Client {
     rpc store (BlockData) returns (EmptyMessage) {}
 }
 
-message NodeJoin {
-    string address = 1;
-    int32 port = 2;
-}
-
-message NetworkInfo {
-    string nodeID = 1;
-    repeated NodeInfo peers = 2;
-}
-
-message NodeInfo {
-    string address = 1;
-    int32 port = 2;
-    string nodeID = 3;
-}
-
 message EmptyMessage {
 }
 

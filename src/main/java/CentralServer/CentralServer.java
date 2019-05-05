@@ -5,6 +5,11 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.nio.file.Files;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -52,16 +57,62 @@ public class CentralServer {
         server.blockUntilShutdown();
     }
 
+    private NetworkInfo joinImpl(NodeJoin request) {
+        NetworkInfo.Builder builder = NetworkInfo.newBuilder();
+        String id = UUID.randomUUID().toString().replace("-", "");
+        NodeInfo info = null;
+
+        // Write new node on file with all nodes
+        File nodesFile = new File("nodeList.txt");
+        try {
+            if (!nodesFile.createNewFile()) {
+                BufferedReader reader = new BufferedReader(new FileReader(nodesFile.getPath()));
+                String line = reader.readLine();
+                reader.close();
+
+                String[] split = line.split(":");
+
+                info = NodeInfo.newBuilder()
+                        .setAddress(split[0])
+                        .setPort(Integer.parseInt(split[1]))
+                        .setNodeID(split[2])
+                        .build();
+            }
+
+            Files.write(nodesFile.toPath(), (request.getAddress()
+                    + ":" + request.getPort()
+                    + ":" + id).getBytes());
+        } catch (Exception ignored) {
+            logger.log(Level.WARNING, "Unable to create or read nodes' file");
+        }
+
+        builder.setNodeID(id).setPeers(0, info);
+
+        return builder.build();
+    }
+
     private class ServerProtoImpl implements ServerGrpc.Server {
 
         @Override
         public void join(NodeJoin request, StreamObserver<NetworkInfo> responseObserver) {
+            logger.log(Level.INFO, "Receiving join request. Responding...");
 
+            NetworkInfo netInfo = joinImpl(request);
+            NetworkInfo.Builder builder = NetworkInfo.newBuilder()
+                    .setNodeID(netInfo.getNodeID());
+
+            // Only 1 peer is being returned. This for-loop is not needed!
+            for (int i = 0; i < netInfo.getPeersList().size(); i++)
+                builder.setPeers(i, netInfo.getPeers(i));
+
+            responseObserver.onNext(builder.build());
+            responseObserver.onCompleted();
         }
 
         @Override
         public void ping(EmptyMessage request, StreamObserver<BooleanMessage> responseObserver) {
             logger.log(Level.INFO, "Receiving ping. Responding...");
+
             responseObserver.onNext(BooleanMessage.newBuilder().setResult(true).build());
             responseObserver.onCompleted();
         }
