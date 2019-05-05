@@ -7,10 +7,13 @@ package GrupoB.gRPCService.ClientProto;
 
 service ClientProto {
     rpc join (NodeJoin) returns (NetworkInfo) {}
+    rpc ping (EmptyMessage) returns (BooleanMessage) {}
+    rpc store (BlockData) returns (EmptyMessage) {}
 }
 
 message NodeJoin {
     string address = 1;
+    int32 port = 2;
 }
 
 message NetworkInfo {
@@ -20,5 +23,17 @@ message NetworkInfo {
 
 message NodeInfo {
     string address = 1;
-    string nodeID = 2;
+    int32 port = 2;
+    string nodeID = 3;
+}
+
+message EmptyMessage {
+}
+
+message BooleanMessage {
+    bool result = 1;
+}
+
+message BlockData {
+    // TODO: Enter a blockchain's block data parameters
 }
