@@ -8,7 +8,10 @@ import io.grpc.stub.StreamObserver;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.nio.file.Files;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,6 +22,8 @@ public class CentralServer {
     /* The port on which the server should run */
     private final int PORT = 50051;
     private Server server;
+
+    private List<NodeInfo> nodes = new LinkedList<>();
 
     private void start() throws Exception {
         server = ServerBuilder.forPort(PORT)
@@ -59,34 +64,42 @@ public class CentralServer {
 
     private NetworkInfo joinImpl(NodeJoin request) {
         NetworkInfo.Builder builder = NetworkInfo.newBuilder();
-        String id = UUID.randomUUID().toString().replace("-", "");
-        NodeInfo info = null;
 
-        // Write new node on file with all nodes
-        File nodesFile = new File("nodeList.txt");
-        try {
-            if (!nodesFile.createNewFile()) {
-                BufferedReader reader = new BufferedReader(new FileReader(nodesFile.getPath()));
-                String line = reader.readLine();
-                reader.close();
+        String id = "";
+        // Check if the node has already connected. If it has,
+        // remove it from the list, to ease up the peer fetch.
+        for (NodeInfo node : nodes) {
+            if (node.getAddress().equals(request.getAddress())
+                    && node.getPort() == request.getPort()) {
+                logger.log(Level.INFO, "Repeated connection. Returning the same nodeID...");
 
-                String[] split = line.split(":");
+                id = node.getNodeID();
+                nodes.remove(node);
 
-                info = NodeInfo.newBuilder()
-                        .setAddress(split[0])
-                        .setPort(Integer.parseInt(split[1]))
-                        .setNodeID(split[2])
-                        .build();
+                break;
             }
-
-            Files.write(nodesFile.toPath(), (request.getAddress()
-                    + ":" + request.getPort()
-                    + ":" + id).getBytes());
-        } catch (Exception ignored) {
-            logger.log(Level.WARNING, "Unable to create or read nodes' file");
         }
 
-        builder.setNodeID(id).setPeers(0, info);
+        // No recorded connection from <address>:<port>. Generate a random nodeID.
+        if (id.equals(""))
+            id = UUID.randomUUID().toString().replace("-", "");
+
+        builder.setNodeID(id);
+
+        // Random peer fetch.
+        if (!nodes.isEmpty()) {
+            int index = (int) (Math.random() * (nodes.size() - 1));
+
+            NodeInfo info = nodes.get(index);
+
+            builder.setPeers(0, info);
+        }
+
+        nodes.add(NodeInfo.newBuilder()
+            .setAddress(request.getAddress())
+            .setPort(request.getPort())
+            .setNodeID(id)
+            .build());
 
         return builder.build();
     }

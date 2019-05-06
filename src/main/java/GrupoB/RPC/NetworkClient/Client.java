@@ -1,8 +1,6 @@
 package GrupoB.RPC.NetworkClient;
 
-import GrupoB.gRPCService.ServerProto.EmptyMessage;
-import GrupoB.gRPCService.ServerProto.BooleanMessage;
-import GrupoB.gRPCService.ServerProto.ServerGrpc;
+import GrupoB.gRPCService.ServerProto.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
@@ -34,6 +32,13 @@ public class Client {
             EmptyMessage request = EmptyMessage.newBuilder().build();
             BooleanMessage response = blockingStub.ping(request);
             logger.info("Ping success: " + response.getResult());
+
+            NodeJoin request2 = NodeJoin.newBuilder()
+                    .setAddress("localhost")
+                    .setPort(50051)
+                    .build();
+            NetworkInfo response2 = blockingStub.join(request2);
+            logger.info("Received NodeID: " + response2.getNodeID());
         } catch (RuntimeException re) {
             logger.log(Level.WARNING, "RPC failed", re);
         }
