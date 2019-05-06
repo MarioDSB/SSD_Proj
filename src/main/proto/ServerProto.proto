@@ -17,7 +17,7 @@ message NodeJoin {
 
 message NetworkInfo {
     string nodeID = 1;
-    repeated NodeInfo peers = 2;
+    NodeInfo peer = 2;
 }
 
 message NodeInfo {

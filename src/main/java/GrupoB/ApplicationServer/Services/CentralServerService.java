@@ -1,8 +1,10 @@
 package GrupoB.ApplicationServer.Services;
 
+import GrupoB.ApplicationServer.ApplicationServer;
+import GrupoB.ApplicationServer.Models.NetInfo;
+import GrupoB.ApplicationServer.Models.Node;
 import GrupoB.ApplicationServer.Models.Test;
 import GrupoB.RPC.CentralServer.CentralClient;
-import GrupoB.ApplicationServer.Models.NodeInfo;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -19,10 +21,10 @@ public class CentralServerService {
         return testModel;
     }
 
-    @GET
+    @POST
     @Path("/joinToChain")
     @Produces(MediaType.APPLICATION_JSON)
-    public NodeInfo joinToChain(@QueryParam("address") String address, @QueryParam("port") String port) {
+    public Node joinToChain(@QueryParam("address") String address, @QueryParam("port") String port) {
         // Comunicate with CentralServer
         CentralClient serverConnection = new CentralClient("localhost", 50051);
         try {
@@ -33,10 +35,24 @@ public class CentralServerService {
             /* Devera retornar a resposta do CentralServerClient */
 
             /* Just for test*/
-            return new NodeInfo(1L,"localhost",50050);
+            return new Node("","localhost",50050);
         } catch (Exception ex) {
             ex.printStackTrace();
             return null;
         }
+    }
+
+    @GET
+    @Path("/ping")
+    @Produces(MediaType.APPLICATION_JSON)
+    public boolean ping() {
+        return ApplicationServer.client.ping();
+    }
+
+    @POST
+    @Path("/join")
+    @Produces(MediaType.APPLICATION_JSON)
+    public NetInfo join(@QueryParam("address") String address, @QueryParam("port") int port) {
+        return NetInfo.fromNetworkInfo(ApplicationServer.client.join(address, port));
     }
 }

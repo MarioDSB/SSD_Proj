@@ -89,12 +89,10 @@ public class CentralServer {
         // Random peer fetch.
         if (!nodes.isEmpty()) {
             int index = (int) (Math.random() * (nodes.size() - 1));
-
-            NodeInfo info = nodes.get(index);
-
-            builder.setPeers(0, info);
+            builder.setPeer(nodes.get(index));
         }
 
+        // Add the "new" node to the nodes' list
         nodes.add(NodeInfo.newBuilder()
             .setAddress(request.getAddress())
             .setPort(request.getPort())
@@ -112,11 +110,8 @@ public class CentralServer {
 
             NetworkInfo netInfo = joinImpl(request);
             NetworkInfo.Builder builder = NetworkInfo.newBuilder()
-                    .setNodeID(netInfo.getNodeID());
-
-            // Only 1 peer is being returned. This for-loop is not needed!
-            for (int i = 0; i < netInfo.getPeersList().size(); i++)
-                builder.setPeers(i, netInfo.getPeers(i));
+                    .setNodeID(netInfo.getNodeID())
+                    .setPeer(netInfo.getPeer());
 
             responseObserver.onNext(builder.build());
             responseObserver.onCompleted();

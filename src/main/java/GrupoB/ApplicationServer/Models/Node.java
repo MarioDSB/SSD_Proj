@@ -1,26 +1,28 @@
 package GrupoB.ApplicationServer.Models;
 
+import GrupoB.gRPCService.ServerProto.NodeInfo;
+
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
 
 @XmlRootElement
-public class NodeInfo implements Serializable {
-    private Long id;
+public class Node implements Serializable {
+    private String nodeID;
     private String address;
     private Integer port;
 
-    public NodeInfo(Long id, String address, Integer port) {
-        this.id = id;
+    public Node(String nodeID, String address, Integer port) {
+        this.nodeID = nodeID;
         this.address = address;
         this.port = port;
     }
 
-    public Long getId() {
-        return id;
+    public String getId() {
+        return nodeID;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setId(String nodeID) {
+        this.nodeID = nodeID;
     }
 
     public String getAddress() {
@@ -39,9 +41,13 @@ public class NodeInfo implements Serializable {
         this.port = port;
     }
 
+    public static Node fromNodeInfo(NodeInfo nodeInfo) {
+        return new Node(nodeInfo.getNodeID(), nodeInfo.getAddress(), nodeInfo.getPort());
+    }
+
     @Override
     public String toString() {
-        return "NodeInfo{" +
+        return "Node{" +
                 "address='" + address + '\'' +
                 ", port=" + port +
                 '}';

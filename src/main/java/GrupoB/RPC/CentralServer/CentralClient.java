@@ -36,7 +36,7 @@ public class CentralClient {
                     .setPort(port)
                     .build();
             NetworkInfo response = blockingStub.join(request);
-            logger.info("NetworkInfo: " + response.getNodeID());
+            logger.info("NetInfo: " + response.getNodeID());
             return "criou " + response.getNodeID();
         } catch (RuntimeException ex) {
             logger.log(Level.WARNING, "RPC failed", ex);
