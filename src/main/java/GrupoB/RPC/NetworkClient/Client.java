@@ -1,4 +1,4 @@
-package NetworkClient;
+package GrupoB.RPC.NetworkClient;
 
 import GrupoB.gRPCService.ServerProto.EmptyMessage;
 import GrupoB.gRPCService.ServerProto.BooleanMessage;

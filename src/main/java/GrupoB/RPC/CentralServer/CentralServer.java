@@ -1,4 +1,4 @@
-package CentralServer;
+package GrupoB.RPC.CentralServer;
 
 import GrupoB.gRPCService.ServerProto.*;
 import io.grpc.Server;
@@ -19,7 +19,6 @@ public class CentralServer {
     /* The port on which the server should run */
     private final int PORT = 50051;
     private Server server;
-    //teste push
 
     private void start() throws Exception {
         server = ServerBuilder.forPort(PORT)
