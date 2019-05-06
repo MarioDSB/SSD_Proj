@@ -59,6 +59,7 @@ public class Client {
         return false;
     }
 
+    /** Join the network*/
     public NetworkInfo join(String address, int port) {
         try {
             NodeJoin request = NodeJoin.newBuilder()

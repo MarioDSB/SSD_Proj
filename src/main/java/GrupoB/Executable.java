@@ -1,9 +1,23 @@
 package GrupoB;
 
+import GrupoB.ApplicationServer.Models.NetInfo;
+import GrupoB.Client.NetworkClient;
+
 public class Executable {
-    // public static String address = "172.20.100.100:9595";
+    private final static String ADDRESS = "localhost";
+    private final static int PORT = 9595;
+
+    private static NetworkClient initClient() {
+        return new NetworkClient(ADDRESS, PORT);
+    }
 
     public static void main(String[] args) {
+        NetworkClient client = initClient();
 
+        System.out.println("Ping result: " + client.ping());
+
+        NetInfo joinResult = client.join();
+
+        System.out.println("My nodeID: " + joinResult.nodeID);
     }
 }

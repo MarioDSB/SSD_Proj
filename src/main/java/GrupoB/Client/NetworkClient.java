@@ -12,15 +12,19 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 
 public class NetworkClient {
+    private String address;
+    private int port;
     private Client client;
     private String baseURI;
 
-    public NetworkClient(String address) {
+    public NetworkClient(String address, int port) {
         ClientConfig config = new ClientConfig(Node.class);
         config.register(JacksonJsonProvider.class);
         client = ClientBuilder.newClient(config);
 
-        this.baseURI = "http://" + address + "/";
+        this.baseURI = "http://" + address + ":" + port +  "/";
+        this.address = address;
+        this.port = port;
     }
 
     public boolean ping() {
@@ -29,9 +33,9 @@ public class NetworkClient {
                 .get(Boolean.class);
     }
 
-    public NetInfo join(String address, int port) {
+    public NetInfo join() {
         JoinRequest jr = new JoinRequest();
-        jr.address = address;
+        jr.address = this.address;
         jr.port = port;
 
         return client.target(baseURI).path("central/join")
