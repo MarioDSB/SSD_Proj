@@ -8,13 +8,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class Client {
-    private static final Logger logger = Logger.getLogger(Client.class.getName());
+public class NetClientRPC {
+    private static final Logger logger = Logger.getLogger(NetClientRPC.class.getName());
 
     private final ManagedChannel channel;
     private final ServerGrpc.ServerBlockingStub blockingStub;
 
-    public Client(String host, int port) {
+    public NetClientRPC(String host, int port) {
         channel = ManagedChannelBuilder.forAddress(host, port)
                 .usePlaintext(true)
                 .build();
@@ -47,7 +47,7 @@ public class Client {
     /** Ping the server */
     public boolean ping() {
         try {
-            logger.info("Will try to ping the Central Server...");
+            logger.info("Will try to ping the central server...");
             EmptyMessage request = EmptyMessage.newBuilder().build();
             BooleanMessage response = blockingStub.ping(request);
 
@@ -77,7 +77,7 @@ public class Client {
 
     // Just for testing
     public static void main(String[] args) throws Exception {
-        Client client = new Client("localhost", 50051);
+        NetClientRPC client = new NetClientRPC("localhost", 50051);
 
         try {
             client.requests();

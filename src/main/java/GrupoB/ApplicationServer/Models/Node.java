@@ -21,24 +21,12 @@ public class Node implements Serializable {
         return nodeID;
     }
 
-    public void setId(String nodeID) {
-        this.nodeID = nodeID;
-    }
-
     public String getAddress() {
         return address;
     }
 
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
     public Integer getPort() {
         return port;
-    }
-
-    public void setPort(Integer port) {
-        this.port = port;
     }
 
     public static Node fromNodeInfo(NodeInfo nodeInfo) {

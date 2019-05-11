@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+// JUST A TEST CLASS
 public class CentralClient {
     private static final Logger logger = Logger.getLogger(CentralClient.class.getName());
 
