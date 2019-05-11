@@ -1,6 +1,7 @@
 package GrupoB.ApplicationServer.Services;
 
 import GrupoB.ApplicationServer.ApplicationServer;
+import GrupoB.ApplicationServer.Models.JoinRequest;
 import GrupoB.ApplicationServer.Models.NetInfo;
 import GrupoB.ApplicationServer.Models.Node;
 import GrupoB.ApplicationServer.Models.Test;
@@ -52,7 +53,8 @@ public class CentralServerService {
     @POST
     @Path("/join")
     @Produces(MediaType.APPLICATION_JSON)
-    public NetInfo join(@QueryParam("address") String address, @QueryParam("port") int port) {
-        return NetInfo.fromNetworkInfo(ApplicationServer.client.join(address, port));
+    public NetInfo join(JoinRequest jr) {
+        System.out.println(jr.address + ":" + jr.port + " is joining...");
+        return NetInfo.fromNetworkInfo(ApplicationServer.client.join(jr.address, jr.port));
     }
 }

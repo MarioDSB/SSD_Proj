@@ -1,6 +1,7 @@
 package GrupoB.ApplicationServer.Models;
 
 import GrupoB.gRPCService.ServerProto.NetworkInfo;
+import GrupoB.gRPCService.ServerProto.NodeInfo;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
@@ -13,7 +14,10 @@ public class NetInfo {
         NetInfo netInfo = new NetInfo();
 
         netInfo.nodeID = networkInfo.getNodeID();
-        netInfo.peer = Node.fromNodeInfo(networkInfo.getPeer());
+        if (!networkInfo.getPeer().equals(NodeInfo.getDefaultInstance()))
+            netInfo.peer = Node.fromNodeInfo(networkInfo.getPeer());
+        else
+            netInfo.peer = null;
 
         return netInfo;
     }

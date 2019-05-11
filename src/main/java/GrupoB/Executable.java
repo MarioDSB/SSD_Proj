@@ -18,6 +18,9 @@ public class Executable {
 
         NetInfo joinResult = client.join();
 
-        System.out.println("My nodeID: " + joinResult.nodeID);
+        if (joinResult != null)
+            System.out.println("My nodeID: " + joinResult.nodeID);
+        else
+            System.out.println("Null response");
     }
 }

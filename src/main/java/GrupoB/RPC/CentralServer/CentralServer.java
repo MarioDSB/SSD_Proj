@@ -99,6 +99,8 @@ public class CentralServer {
             .setNodeID(id)
             .build());
 
+        logger.info("Number of connected nodes: " + nodes.size());
+
         return builder.build();
     }
 

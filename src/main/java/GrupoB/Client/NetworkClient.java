@@ -6,6 +6,7 @@ import GrupoB.ApplicationServer.Models.Node;
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJsonProvider;
 
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -28,18 +29,26 @@ public class NetworkClient {
     }
 
     public boolean ping() {
-        return client.target(baseURI).path("central/ping")
-                .request(MediaType.APPLICATION_JSON)
-                .get(Boolean.class);
+        try {
+            return client.target(baseURI).path("central/ping")
+                    .request(MediaType.APPLICATION_JSON)
+                    .get(Boolean.class);
+        } catch (NotFoundException ignored) {
+            return false;
+        }
     }
 
     public NetInfo join() {
-        JoinRequest jr = new JoinRequest();
-        jr.address = this.address;
-        jr.port = port;
+        try {
+            JoinRequest jr = new JoinRequest();
+            jr.address = this.address;
+            jr.port = this.port;
 
-        return client.target(baseURI).path("central/join")
-                .request(MediaType.APPLICATION_JSON)
-                .post(Entity.entity(jr, MediaType.APPLICATION_JSON), NetInfo.class);
+            return client.target(baseURI).path("central/join")
+                    .request(MediaType.APPLICATION_JSON)
+                    .post(Entity.entity(jr, MediaType.APPLICATION_JSON), NetInfo.class);
+        } catch (NotFoundException ignored) {
+            return null;
+        }
     }
 }

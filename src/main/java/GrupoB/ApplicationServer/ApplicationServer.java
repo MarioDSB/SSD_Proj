@@ -8,13 +8,13 @@ import org.eclipse.jetty.servlet.ServletHolder;
 
 public class ApplicationServer {
 
-    public static final int DEFAULT_PORT = 50052;
+    public static final int DEFAULT_PORT = 50051;
 
     public static Client client = null;
 
     private static void startJetty(int port) throws Exception {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/services");
+        context.setContextPath("/");
 
         Server jettyServer = new Server(port);
         jettyServer.setHandler(context);
