@@ -13,14 +13,15 @@ public class Executable {
     private final static int PORT = 9595;
 
     // Maximum contacts stored in a kBucket
-    private final static int K = 3;
+    public final static int K = 3;
+    // NodeID bit size
     private final static int keySize = 256;
 
     private static String nodeID;
 
-    private static Map<String, Node> peers = new HashMap<>();
+    public static Map<String, Node> peers = new HashMap<>();
     @SuppressWarnings("unchecked")
-    private static ArrayList<Node>[] kBuckets = new ArrayList[keySize];
+    public static ArrayList<Node>[] kBuckets = new ArrayList[keySize];
 
     private static NetworkClient initNetClient() {
         return new NetworkClient(ADDRESS, PORT);
@@ -103,5 +104,8 @@ public class Executable {
 
         // Client joined the network.
         // It should start computing new blocks.
+
+        // 1 Thread to compute the blocks
+        // 1 Thread to handle communications
     }
 }

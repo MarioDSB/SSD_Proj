@@ -62,60 +62,55 @@ public class CentralServer {
         server.blockUntilShutdown();
     }
 
-    private NetworkInfo joinImpl(NodeJoin request) {
-        NetworkInfo.Builder builder = NetworkInfo.newBuilder();
-
-        String id = "";
-        // Check if the node has already connected. If it has,
-        // remove it from the list, to ease up the peer fetch.
-        for (NodeInfo node : nodes) {
-            if (node.getAddress().equals(request.getAddress())
-                    && node.getPort() == request.getPort()) {
-                logger.log(Level.INFO, "Repeated connection. Returning the same nodeID...");
-
-                id = node.getNodeID();
-                nodes.remove(node);
-
-                break;
-            }
-        }
-
-        // No recorded connection from <address>:<port>. Generate a random nodeID.
-        if (id.equals(""))
-            id = UUID.randomUUID().toString().replace("-", "");
-
-        builder.setNodeID(id);
-
-        // Random peer fetch.
-        if (!nodes.isEmpty()) {
-            int index = (int) (Math.random() * (nodes.size() - 1));
-            builder.setPeer(nodes.get(index));
-        }
-
-        // Add the "new" node to the nodes' list
-        nodes.add(NodeInfo.newBuilder()
-            .setAddress(request.getAddress())
-            .setPort(request.getPort())
-            .setNodeID(id)
-            .build());
-
-        logger.info("Number of connected nodes: " + nodes.size());
-
-        return builder.build();
-    }
-
     private class ServerProtoImpl implements ServerGrpc.Server {
+
+        private NetworkInfo joinImpl(NodeJoin request) {
+            NetworkInfo.Builder builder = NetworkInfo.newBuilder();
+
+            String id = "";
+            // Check if the node has already connected. If it has,
+            // remove it from the list, to ease up the peer fetch.
+            for (NodeInfo node : nodes) {
+                if (node.getAddress().equals(request.getAddress())
+                        && node.getPort() == request.getPort()) {
+                    logger.log(Level.INFO, "Repeated connection. Returning the same nodeID...");
+
+                    id = node.getNodeID();
+                    nodes.remove(node);
+
+                    break;
+                }
+            }
+
+            // No recorded connection from <address>:<port>. Generate a random nodeID.
+            if (id.equals(""))
+                id = UUID.randomUUID().toString().replace("-", "");
+
+            builder.setNodeID(id);
+
+            // Random peer fetch.
+            if (!nodes.isEmpty()) {
+                int index = (int) (Math.random() * (nodes.size() - 1));
+                builder.setPeer(nodes.get(index));
+            }
+
+            // Add the "new" node to the nodes' list
+            nodes.add(NodeInfo.newBuilder()
+                    .setAddress(request.getAddress())
+                    .setPort(request.getPort())
+                    .setNodeID(id)
+                    .build());
+
+            logger.info("Number of connected nodes: " + nodes.size());
+
+            return builder.build();
+        }
 
         @Override
         public void join(NodeJoin request, StreamObserver<NetworkInfo> responseObserver) {
             logger.log(Level.INFO, "Receiving join request. Responding...");
 
-            NetworkInfo netInfo = joinImpl(request);
-            NetworkInfo.Builder builder = NetworkInfo.newBuilder()
-                    .setNodeID(netInfo.getNodeID())
-                    .setPeer(netInfo.getPeer());
-
-            responseObserver.onNext(builder.build());
+            responseObserver.onNext(joinImpl(request));
             responseObserver.onCompleted();
         }
 
