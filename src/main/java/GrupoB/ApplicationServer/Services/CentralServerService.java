@@ -1,11 +1,10 @@
 package GrupoB.ApplicationServer.Services;
 
-import GrupoB.ApplicationServer.ApplicationServer;
+import GrupoB.ApplicationServer.CentralClient;
 import GrupoB.ApplicationServer.Models.JoinRequest;
 import GrupoB.ApplicationServer.Models.NetInfo;
 import GrupoB.ApplicationServer.Models.Node;
 import GrupoB.ApplicationServer.Models.Test;
-import GrupoB.RPC.CentralServer.CentralClient;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -27,7 +26,7 @@ public class CentralServerService {
     @Produces(MediaType.APPLICATION_JSON)
     public Node joinToChain(@QueryParam("address") String address, @QueryParam("port") String port) {
         // Comunicate with CentralServer
-        CentralClient serverConnection = new CentralClient("localhost", 50051);
+        GrupoB.RPC.CentralServer.CentralClient serverConnection = new GrupoB.RPC.CentralServer.CentralClient("localhost", 50051);
         try {
             /* Access a service running on the local machine on port 50051 */
             String response = serverConnection.join("localhost", 50050);
@@ -47,7 +46,7 @@ public class CentralServerService {
     @Path("/ping")
     @Produces(MediaType.APPLICATION_JSON)
     public boolean ping() {
-        return ApplicationServer.client.ping();
+        return CentralClient.client.ping();
     }
 
     @POST
@@ -55,6 +54,6 @@ public class CentralServerService {
     @Produces(MediaType.APPLICATION_JSON)
     public NetInfo join(JoinRequest jr) {
         System.out.println(jr.address + ":" + jr.port + " is joining...");
-        return NetInfo.fromNetworkInfo(ApplicationServer.client.join(jr.address, jr.port));
+        return NetInfo.fromNetworkInfo(CentralClient.client.join(jr.address, jr.port));
     }
 }
