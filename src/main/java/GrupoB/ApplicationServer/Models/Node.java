@@ -1,6 +1,7 @@
 package GrupoB.ApplicationServer.Models;
 
-import GrupoB.gRPCService.ServerProto.NodeInfo;
+// import GrupoB.gRPCService.ServerProto.NodeInfo;
+
 
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
@@ -29,8 +30,16 @@ public class Node implements Serializable {
         return port;
     }
 
-    public static Node fromNodeInfo(NodeInfo nodeInfo) {
+    public static Node fromNodeInfo(GrupoB.gRPCService.ServerProto.NodeInfo nodeInfo) {
         return new Node(nodeInfo.getNodeID(), nodeInfo.getAddress(), nodeInfo.getPort());
+    }
+
+    public static GrupoB.gRPCService.ClientProto.NodeInfo toNodeInfo(Node node) {
+        return GrupoB.gRPCService.ClientProto.NodeInfo.newBuilder()
+                .setNodeID(node.nodeID)
+                .setPort(node.port)
+                .setAddress(node.address)
+                .build();
     }
 
     @Override

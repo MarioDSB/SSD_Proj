@@ -36,16 +36,20 @@ public class Executable {
         peers.put(peer.getId(), peer);
     }
 
+    public static int calculateDistance(String node1, String node2) {
+        int myDecimalID = Integer.parseInt(node1);
+        int peerDecimalID = Integer.parseInt(node2);
+
+        return myDecimalID ^ peerDecimalID;
+    }
+
     /**
      * Calculates the index of the kBucket the peer belongs to
-     * @param peer The peer in question
+     * @param peerID The nodeID of the peer in question
      * @return The kBucket in which the peer belongs
      */
-    private static int calculateKBucket(Node peer) {
-        int myDecimalID = Integer.parseInt(nodeID);
-        int peerDecimalID = Integer.parseInt(peer.getId());
-
-        int distance = myDecimalID ^ peerDecimalID;
+    public static int calculateKBucket(String peerID) {
+        int distance = calculateDistance(nodeID, peerID);
 
         for (int i = 0; i < keySize; i++)
             if (Math.pow(2, i) < distance && Math.pow(2, i + 1) > distance)
@@ -54,7 +58,7 @@ public class Executable {
         return -1;
     }
 
-    private static void sendToTail(int index, Node peer) {
+    public static void sendToTail(int index, Node peer) {
         int peerIndex = kBuckets[index].indexOf(peer);
 
         int i;
@@ -65,7 +69,7 @@ public class Executable {
     }
 
     private static void addToKBucket(Node peer) {
-        int index = calculateKBucket(peer);
+        int index = calculateKBucket(peer.getId());
 
         // Peer already exists in kBucket
         if (kBuckets[index].contains(peer))
