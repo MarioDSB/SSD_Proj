@@ -41,7 +41,11 @@ public class P2PClientRPC {
         return false;
     }
 
-    /** Find a node */
+    /**
+     * Tries to find a node by its nodeID
+     * @param nodeID The nodeID of the node to find
+     * @return A list of nodes closest to the target
+     */
     public List<NodeInfo> findNode(String nodeID) {
         try {
             logger.info("Will try to find node " + nodeID + "...");
