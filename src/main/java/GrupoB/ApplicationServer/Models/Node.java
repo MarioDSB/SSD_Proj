@@ -34,6 +34,10 @@ public class Node implements Serializable {
         return new Node(nodeInfo.getNodeID(), nodeInfo.getAddress(), nodeInfo.getPort());
     }
 
+    public static Node fromNodeInfo(GrupoB.gRPCService.ClientProto.NodeInfo nodeInfo) {
+        return new Node(nodeInfo.getNodeID(), nodeInfo.getAddress(), nodeInfo.getPort());
+    }
+
     public static GrupoB.gRPCService.ClientProto.NodeInfo toNodeInfo(Node node) {
         return GrupoB.gRPCService.ClientProto.NodeInfo.newBuilder()
                 .setNodeID(node.nodeID)

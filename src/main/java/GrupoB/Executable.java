@@ -124,11 +124,33 @@ public class Executable {
         }
     }
 
+    /**
+     * Gets the closest node from a list of nodes in relation to a nodeID
+     * @param nodeID nodeID of the node in question
+     * @param nodeQueue The list of nodes
+     * @return The closest node of the list
+     */
+    private static NodeInfo getClosestNode(String nodeID, List<NodeInfo> nodeQueue) {
+        NodeInfo closestNode = null;
+        int closestDistance = Integer.MAX_VALUE;
+
+        for (NodeInfo node : nodeQueue) {
+            int distance = calculateDistance(nodeID, node.getNodeID());
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestNode = node;
+            }
+        }
+
+        return closestNode;
+    }
+
     private static void processJoin(NetInfo joinResult) {
         nodeID = joinResult.nodeID;
 
         System.out.println("Successfully joined the network. My nodeID is " + nodeID);
 
+        // Updates the routing table (kBuckets) of the other nodes of the network
         if (joinResult.peer != null) {
             // addNewPeer(joinResult.peer);
             addToKBucket(joinResult.peer);
@@ -138,23 +160,40 @@ public class Executable {
             P2PClientRPC p2pClient = new P2PClientRPC(joinResult.peer.getAddress(), joinResult.peer.getPort());
 
             List<NodeInfo> prevResponse = null;
+            List<String> contactedNodes = new LinkedList<>();
+            List<NodeInfo> nodeQueue = new LinkedList<>();
+
             List<NodeInfo> response = p2pClient.findNode(nodeID);
+            contactedNodes.add(joinResult.peer.getId());
             while (!response.equals(prevResponse)) {
-                for (NodeInfo node : response) {
-                    // TODO: Process the received nodes
+                if (prevResponse != null) {
+                    prevResponse.clear();
+                    prevResponse.addAll(response);
+                } else prevResponse = response;
+
+                nodeQueue.addAll(response);
+
+                // Selects the closest recorded node, and checks if it was already contacted
+                NodeInfo closestNode = getClosestNode(nodeID, nodeQueue);
+                while (contactedNodes.contains(closestNode.getNodeID())) {
+                    nodeQueue.remove(closestNode);
+                    closestNode = getClosestNode(nodeID, nodeQueue);
                 }
 
-                prevResponse = response;
-                // TODO
-                // Keep the findNode going, until both
-                // prevResponse and response are the same.
+                // Close the previous P2PClient and open a new connection,
+                // to the closest recorded node, creating a new findNode request
+                try {
+                    p2pClient.shutdown();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                p2pClient = new P2PClientRPC(closestNode.getAddress(), closestNode.getPort());
+                response = p2pClient.findNode(nodeID);
 
-                /*
-                    ex:
-                    p2pClient.shutdown;
-                    p2pClient = new P2PClientRPC(<anotherPeer>.address, <anotherPeer>.port);
-                    response = p2pClient.findNode(nodeID);
-                 */
+                // Adds the contactedNode to the kBuckets
+                // and to the list of contacted nodes
+                addToKBucket(Node.fromNodeInfo(closestNode));
+                contactedNodes.add(closestNode.getNodeID());
             }
         }
 
@@ -184,10 +223,10 @@ public class Executable {
 
         processJoin(joinResult);
 
-        // Client joined the network.
-        // It should start computing new blocks.
-
-        // 1 Thread to compute the blocks
-        // 1 Thread to handle communications
+        // TODO
+        /*
+            Client joined the network.
+            It should start computing new blocks.
+        */
     }
 }
