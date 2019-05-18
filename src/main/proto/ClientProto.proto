@@ -9,6 +9,7 @@ service Client {
     rpc ping (EmptyMessage) returns (BooleanMessage) {}
     rpc store (BlockData) returns (EmptyMessage) {}
     rpc findNode (NodeID) returns (Nodes) {}
+    rpc getBlockchain (EmptyMessage) returns (Blocks) {}
 }
 
 message EmptyMessage {
@@ -18,8 +19,14 @@ message BooleanMessage {
     bool result = 1;
 }
 
+message Blocks {
+    repeated BlockData block = 1;
+}
+
 message BlockData {
-    // TODO: Enter a blockchain's block data parameters
+    // TODO: Check if prevBlockHash and blockID is needed
+    string merkleRoot = 1;
+    repeated string transaction = 2;
 }
 
 message NodeID {

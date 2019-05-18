@@ -21,27 +21,6 @@ public class CentralServerService {
         return testModel;
     }
 
-    @POST
-    @Path("/joinToChain")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Node joinToChain(@QueryParam("address") String address, @QueryParam("port") String port) {
-        // Comunicate with CentralServer
-        GrupoB.RPC.CentralServer.CentralClient serverConnection = new GrupoB.RPC.CentralServer.CentralClient("localhost", 50051);
-        try {
-            /* Access a service running on the local machine on port 50051 */
-            String response = serverConnection.join("localhost", 50050);
-            System.out.println("!!!RESPOSTA: " + response);
-
-            /* Devera retornar a resposta do CentralServerClient */
-
-            /* Just for test*/
-            return new Node("","localhost",50050);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            return null;
-        }
-    }
-
     @GET
     @Path("/ping")
     @Produces(MediaType.APPLICATION_JSON)

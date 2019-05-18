@@ -1,6 +1,7 @@
 package GrupoB.RPC.P2PServer;
 
 import GrupoB.ApplicationServer.Models.Node;
+import GrupoB.Blockchain.Block;
 import GrupoB.Executable;
 import GrupoB.gRPCService.ClientProto.*;
 import io.grpc.Server;
@@ -157,6 +158,23 @@ public class P2PServer {
             logger.log(Level.INFO, "Receiving FIND_NODE request. Responding...");
 
             responseObserver.onNext(findNodeImpl(request));
+            responseObserver.onCompleted();
+        }
+
+        private Blocks getBCImpl() {
+            Blocks.Builder builder = Blocks.newBuilder();
+
+            for (Block block : Executable.blockChain)
+                builder.addBlock(Block.blockToBlockData(block));
+
+            return builder.build();
+        }
+
+        @Override
+        public void getBlockchain(EmptyMessage request, StreamObserver<Blocks> responseObserver) {
+            logger.log(Level.INFO, "Receiving GET_BLOCKCHAIN request. Responding...");
+
+            responseObserver.onNext(getBCImpl());
             responseObserver.onCompleted();
         }
     }

@@ -1,9 +1,11 @@
 package GrupoB.RPC.P2PClient;
 
+import GrupoB.Blockchain.Block;
 import GrupoB.gRPCService.ClientProto.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -52,6 +54,20 @@ public class P2PClientRPC {
             NodeID request = NodeID.newBuilder().setNodeID(nodeID).build();
 
             return blockingStub.findNode(request).getNodesList();
+        } catch (RuntimeException re) {
+            logger.log(Level.WARNING, "RPC failed", re);
+        }
+
+        return null;
+    }
+
+    public LinkedList<Block> getBlockchain() {
+        try {
+            logger.info("Will try to get the blockchain...");
+            EmptyMessage request = EmptyMessage.newBuilder().build();
+            Blocks blocks = blockingStub.getBlockchain(request);
+
+            return Block.blockListFromBlocks(blocks);
         } catch (RuntimeException re) {
             logger.log(Level.WARNING, "RPC failed", re);
         }

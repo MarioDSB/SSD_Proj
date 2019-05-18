@@ -2,10 +2,14 @@ package GrupoB;
 
 import GrupoB.ApplicationServer.Models.NetInfo;
 import GrupoB.ApplicationServer.Models.Node;
+import GrupoB.Blockchain.Block;
+import GrupoB.Blockchain.MerkleRoot;
 import GrupoB.Client.NetworkClient;
 import GrupoB.RPC.P2PClient.P2PClientRPC;
+import GrupoB.Utils.HashCash;
 import GrupoB.gRPCService.ClientProto.NodeInfo;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 public class Executable {
@@ -19,9 +23,10 @@ public class Executable {
 
     private static String nodeID;
 
-    public static Map<String, Node> peers = new HashMap<>();
     @SuppressWarnings("unchecked")
     public static ArrayList<Node>[] kBuckets = new ArrayList[keySize];
+
+    public static List<Block> blockChain = new LinkedList<>();
 
     private static NetworkClient initNetClient() {
         return new NetworkClient(ADDRESS, PORT);
@@ -30,11 +35,6 @@ public class Executable {
     private static void initKBuckets() {
         for (int i = 0; i < keySize; i++)
             kBuckets[i] = new ArrayList<>();
-    }
-
-    // THIS FUNCTION MAY BE USELESS
-    private static void addNewPeer(Node peer) {
-        peers.put(peer.getId(), peer);
     }
 
     /**
@@ -145,7 +145,25 @@ public class Executable {
         return closestNode;
     }
 
+    /**
+     * Force the new node to perform a initial computation.
+     * This computation has no objective other than making it harder to perform an Eclipse Attack.
+     * @throws NoSuchAlgorithmException SHA-1 not supported
+     */
+    private static void forceComputation() throws NoSuchAlgorithmException {
+        HashCash.mintCash(UUID.randomUUID().toString(), 30);
+    }
+
     private static void processJoin(NetInfo joinResult) {
+        // Force the new node to perform a initial computation.
+        // This computation has no objective other than making it harder to perform an Eclipse Attack.
+        try {
+            forceComputation();
+        } catch (NoSuchAlgorithmException e) {
+            System.out.println("Couldn't perform the initial computation. Exiting...");
+            System.exit(0);
+        }
+
         nodeID = joinResult.nodeID;
 
         System.out.println("Successfully joined the network. My nodeID is " + nodeID);
@@ -195,15 +213,21 @@ public class Executable {
                 addToKBucket(Node.fromNodeInfo(closestNode));
                 contactedNodes.add(closestNode.getNodeID());
             }
-        }
 
-        // TODO: Get the blockchain
-        /*
-            ex:
-            netClient.getBlockchain()
-                    OR
-            p2pClient.getBlockchain()
-         */
+            // Get the blockchain from the peer
+            p2pClient = new P2PClientRPC(joinResult.peer.getAddress(), joinResult.peer.getPort());
+            blockChain = p2pClient.getBlockchain();
+            try {
+                p2pClient.shutdown();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            if (blockChain == null) {
+                System.out.println("Couldn't get the blockchain, although it exists. Exiting...");
+                System.exit(0);
+            }
+        }
     }
 
     public static void main(String[] args) {
@@ -223,10 +247,23 @@ public class Executable {
 
         processJoin(joinResult);
 
-        // TODO
-        /*
-            Client joined the network.
-            It should start computing new blocks.
-        */
+
+        // Client joined the network. It should start computing new blocks.
+        while(true) {
+            try {
+                HashCash.mintCash(UUID.randomUUID().toString(), 32);
+
+                // TODO:
+                // The block was created. Try to add it to the blockchain.
+
+                // TODO: Create a real transactions list
+                LinkedList<String> transactions = new LinkedList<>();
+
+                Block newBlock = new Block(MerkleRoot.computeMerkleRoot(transactions), transactions);
+            } catch (NoSuchAlgorithmException e) {
+                System.out.println("Couldn't compute new blocks. Exiting...");
+                return;
+            }
+        }
     }
 }
