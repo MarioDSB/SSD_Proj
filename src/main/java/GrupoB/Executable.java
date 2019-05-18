@@ -253,8 +253,7 @@ public class Executable {
             try {
                 HashCash.mintCash(UUID.randomUUID().toString(), 32);
 
-                // TODO:
-                // The block was created. Try to add it to the blockchain.
+                // TODO: The block was created. Try to add it to the blockchain.
 
                 // TODO: Create a real transactions list
                 LinkedList<String> transactions = new LinkedList<>();
