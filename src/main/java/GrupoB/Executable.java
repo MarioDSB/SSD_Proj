@@ -13,6 +13,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 public class Executable {
+    //TODO: Get the real public IP address (by argv[] or by coding like the IPTest)
     private final static String ADDRESS = "localhost";
     private final static int PORT = 9595;
 
