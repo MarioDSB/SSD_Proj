@@ -3,8 +3,12 @@ package GrupoB.ApplicationServer.Models;
 // import GrupoB.gRPCService.ServerProto.NodeInfo;
 
 
+import GrupoB.gRPCService.ClientProto.NodeInfo;
+import GrupoB.gRPCService.ClientProto.Nodes;
+
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
+import java.util.LinkedList;
 
 @XmlRootElement
 public class Node implements Serializable {
@@ -34,16 +38,28 @@ public class Node implements Serializable {
         return new Node(nodeInfo.getNodeID(), nodeInfo.getAddress(), nodeInfo.getPort());
     }
 
-    public static Node fromNodeInfo(GrupoB.gRPCService.ClientProto.NodeInfo nodeInfo) {
+    public static Node fromNodeInfo(NodeInfo nodeInfo) {
         return new Node(nodeInfo.getNodeID(), nodeInfo.getAddress(), nodeInfo.getPort());
     }
 
-    public static GrupoB.gRPCService.ClientProto.NodeInfo toNodeInfo(Node node) {
-        return GrupoB.gRPCService.ClientProto.NodeInfo.newBuilder()
+    public static NodeInfo toNodeInfo(Node node) {
+        return NodeInfo.newBuilder()
                 .setNodeID(node.nodeID)
                 .setPort(node.port)
                 .setAddress(node.address)
                 .build();
+    }
+
+    public static LinkedList<NodeInfo> toNodeInfoList(Nodes nodes) {
+        LinkedList<NodeInfo> nodeInfos = new LinkedList<>();
+
+        nodeInfos.addAll(nodes.getNodesList());
+
+        return nodeInfos;
+    }
+
+    public static Nodes toNodes(LinkedList<NodeInfo> nodes) {
+        return Nodes.newBuilder().addAllNodes(nodes).build();
     }
 
     @Override

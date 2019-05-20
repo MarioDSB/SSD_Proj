@@ -10,14 +10,16 @@ public class TestHashCash {
 
     /*  NOTES:
         32m27s to generate a block with difficulty 30
-        27m42s to generate a block with difficulty 32
+
         1m34s to generate a block with difficulty 32
+        27m42s to generate a block with difficulty 32
+        34m50s to generate a block with difficulty 32
     */
 
     public static void main(String[] args) {
         long start = System.currentTimeMillis();
         try {
-            HashCash.mintCash(UUID.randomUUID().toString(), 32);
+            HashCash.mintCash(UUID.randomUUID().toString(), 26);
         } catch (Exception e) {
             e.printStackTrace();
         }

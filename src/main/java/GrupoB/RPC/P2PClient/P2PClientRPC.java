@@ -48,10 +48,14 @@ public class P2PClientRPC {
      * @param nodeID The nodeID of the node to find
      * @return A list of nodes closest to the target
      */
-    public List<NodeInfo> findNode(String nodeID) {
+    public List<NodeInfo> findNode(String address, int port, String nodeID) {
         try {
             logger.info("Will try to find node " + nodeID + "...");
-            NodeID request = NodeID.newBuilder().setNodeID(nodeID).build();
+            NodeInfo request = NodeInfo.newBuilder()
+                    .setAddress(address)
+                    .setPort(port)
+                    .setNodeID(nodeID)
+                    .build();
 
             return blockingStub.findNode(request).getNodesList();
         } catch (RuntimeException re) {
@@ -59,6 +63,21 @@ public class P2PClientRPC {
         }
 
         return null;
+    }
+
+    public void store(BlockData newBlock, Nodes contactedNodes) {
+        try {
+            logger.info("Will try to send a request to store a block...");
+
+            StoreData request = StoreData.newBuilder()
+                    .setBlock(newBlock)
+                    .setNodes(contactedNodes)
+                    .build();
+
+            blockingStub.store(request);
+        } catch (RuntimeException re) {
+            logger.log(Level.WARNING, "RPC failed", re);
+        }
     }
 
     public LinkedList<Block> getBlockchain() {

@@ -11,6 +11,7 @@ public class Block {
     // private String prevBlockHash;
     // private String blockID;
     private String merkleRoot;
+
     private LinkedList<String> transactions;
 
     public Block(/*String prevBlockHash, String blockID,*/
@@ -21,6 +22,10 @@ public class Block {
         this.transactions = transactions;
     }
 
+    public String getMerkleRoot() {
+        return merkleRoot;
+    }
+
     /**
      * Checks if the block's merkle root matches the merkle root computed by hashing the transactions
      * @return True if it matches, False otherwise
@@ -29,7 +34,7 @@ public class Block {
         return merkleRoot.equals(MerkleRoot.computeMerkleRoot(this.transactions));
     }
 
-    private static Block blockFromBlockData(BlockData block) {
+    public static Block blockFromBlockData(BlockData block) {
         LinkedList<String> transactions = new LinkedList<>();
         for (int i = 0; i < block.getTransactionCount(); i++)
             transactions.add(block.getTransaction(i));

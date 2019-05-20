@@ -17,14 +17,14 @@ public class Executable {
     private final static int PORT = 9595;
 
     // Maximum contacts stored in a kBucket
-    public final static int K = 3;
+    private final static int K = 3;
     // NodeID bit size
     private final static int keySize = 256;
 
     private static String nodeID;
 
     @SuppressWarnings("unchecked")
-    public static ArrayList<Node>[] kBuckets = new ArrayList[keySize];
+    private static ArrayList<Node>[] kBuckets = new ArrayList[keySize];
 
     public static List<Block> blockChain = new LinkedList<>();
 
@@ -43,7 +43,7 @@ public class Executable {
      * @param node2 Second nodeID
      * @return The distance between node1 and node2
      */
-    public static int calculateDistance(String node1, String node2) {
+    private static int calculateDistance(String node1, String node2) {
         int myDecimalID = Integer.parseInt(node1);
         int peerDecimalID = Integer.parseInt(node2);
 
@@ -70,7 +70,7 @@ public class Executable {
      * @param index Index of the kBucket
      * @param peer Node to move
      */
-    public static void sendToTail(int index, Node peer) {
+    private static void sendToTail(int index, Node peer) {
         int peerIndex = kBuckets[index].indexOf(peer);
 
         int i;
@@ -87,7 +87,7 @@ public class Executable {
      * the new peer is discarded.
      * @param peer The peer to add to the kBuckets
      */
-    private static void addToKBucket(Node peer) {
+    public static void addToKBucket(Node peer) {
         int index = calculateKBucket(peer.getId());
 
         // Peer already exists in kBucket
@@ -102,15 +102,13 @@ public class Executable {
                 Node node = kBuckets[index].get(0);
                 P2PClientRPC p2pClient = new P2PClientRPC(node.getAddress(), node.getPort());
 
-                // If it fails to respond, remove it from
-                // the kBucket and insert this new peer
+                // If it fails to respond, remove it from the kBucket and insert this new peer
                 if (!p2pClient.ping()) {
                     kBuckets[index].remove(node);
                     kBuckets[index].add(peer);
                     sendToTail(index, peer);
                 }
-                // Else, move it to the end of the
-                // kBucket and discard this new peer
+                // Else, move it to the end of the kBucket and discard this new peer
                 else
                     sendToTail(index, node);
 
@@ -155,22 +153,12 @@ public class Executable {
     }
 
     private static void processJoin(NetInfo joinResult) {
-        // Force the new node to perform a initial computation.
-        // This computation has no objective other than making it harder to perform an Eclipse Attack.
-        try {
-            forceComputation();
-        } catch (NoSuchAlgorithmException e) {
-            System.out.println("Couldn't perform the initial computation. Exiting...");
-            System.exit(0);
-        }
-
         nodeID = joinResult.nodeID;
 
         System.out.println("Successfully joined the network. My nodeID is " + nodeID);
 
         // Updates the routing table (kBuckets) of the other nodes of the network
         if (joinResult.peer != null) {
-            // addNewPeer(joinResult.peer);
             addToKBucket(joinResult.peer);
 
             // On joining the network, the kBuckets will be empty,
@@ -181,7 +169,7 @@ public class Executable {
             List<String> contactedNodes = new LinkedList<>();
             List<NodeInfo> nodeQueue = new LinkedList<>();
 
-            List<NodeInfo> response = p2pClient.findNode(nodeID);
+            List<NodeInfo> response = p2pClient.findNode(ADDRESS, PORT, nodeID);
             contactedNodes.add(joinResult.peer.getId());
             while (!response.equals(prevResponse)) {
                 if (prevResponse != null) {
@@ -203,13 +191,13 @@ public class Executable {
                 try {
                     p2pClient.shutdown();
                 } catch (InterruptedException e) {
+                    System.out.println("ERROR: Couldn't close P2PClient. (gRPC connection)");
                     e.printStackTrace();
                 }
                 p2pClient = new P2PClientRPC(closestNode.getAddress(), closestNode.getPort());
-                response = p2pClient.findNode(nodeID);
+                response = p2pClient.findNode(ADDRESS, PORT, nodeID);
 
-                // Adds the contactedNode to the kBuckets
-                // and to the list of contacted nodes
+                // Adds the contactedNode to the kBuckets and to the list of contacted nodes
                 addToKBucket(Node.fromNodeInfo(closestNode));
                 contactedNodes.add(closestNode.getNodeID());
             }
@@ -220,6 +208,7 @@ public class Executable {
             try {
                 p2pClient.shutdown();
             } catch (InterruptedException e) {
+                System.out.println("ERROR: Couldn't close P2PClient. (gRPC connection)");
                 e.printStackTrace();
             }
 
@@ -228,6 +217,138 @@ public class Executable {
                 System.exit(0);
             }
         }
+    }
+
+    /**
+     * Check if there is some node further away than the nodeToInsert,
+     * and replace it, if it is the case
+     * @param nodeID nodeID of the node we are searching
+     * @param nodeToInsert node we want to check
+     */
+    private static LinkedList<NodeInfo> checkAndInsert(String nodeID, NodeInfo nodeToInsert,
+                                                LinkedList<NodeInfo> closestNodes) {
+
+        // If there is still space for another node, insert it
+        if (closestNodes.size() < K) {
+            closestNodes.add(nodeToInsert);
+            return closestNodes;
+        }
+
+        // Get the furthest node from the nodeID
+        NodeInfo furthestNode = closestNodes.get(0);
+        int maxDistance = calculateDistance(nodeID, furthestNode.getNodeID());
+
+        for (int i = 1; i < closestNodes.size(); i++) {
+            int aux = calculateDistance(nodeID, closestNodes.get(i).getNodeID());
+            if (aux > maxDistance) {
+                maxDistance = aux;
+                furthestNode = closestNodes.get(i);
+            }
+        }
+
+        // If the nodeToInsert is closer than the furthestNode,
+        // replace the furthestNode with the nodeToInsert
+        if (calculateDistance(nodeID, nodeToInsert.getNodeID()) < maxDistance) {
+            closestNodes.remove(furthestNode);
+            closestNodes.add(nodeToInsert);
+        }
+
+        return closestNodes;
+    }
+
+    /**
+     * Simple routine to adjust the offset while traversing the kBuckets
+     * @param indexOffset the initial offset
+     * @return the adjusted offset
+     */
+    private static int adjustOffset(int indexOffset) {
+        if (indexOffset <= 0) {
+            indexOffset -= 1;
+            indexOffset = -indexOffset;
+        } else {
+            indexOffset += 1;
+            indexOffset = -indexOffset;
+        }
+
+        return indexOffset;
+    }
+
+    /**
+     * Searches up and down, starting on the kBucket[indexToSearch],
+     * trying to get the K closest peers to the nodeID
+     * @param id nodeID in question
+     * @param indexToSearch starting index
+     * @param indexOffset index offset
+     */
+    private static LinkedList<NodeInfo> getClosestNodes(String id, int indexToSearch, int indexOffset,
+                                                       LinkedList<NodeInfo> closestNodes,
+                                                       LinkedList<NodeInfo> contactedNodes) {
+        indexToSearch = indexToSearch + indexOffset;
+
+        // If the indexToSearch is out-of-bounds, try to search the other way
+        if (indexToSearch < 0 || indexToSearch >= kBuckets.length) {
+            indexOffset = adjustOffset(indexOffset);
+
+            // If all the kBuckets have been searched, return the uncompleted list
+            if (indexToSearch + indexOffset < 0 || indexToSearch + indexOffset >= kBuckets.length)
+                return closestNodes;
+
+            return getClosestNodes(id, indexToSearch, indexOffset, closestNodes, contactedNodes);
+        }
+
+        for (int i = 0; i < K; i++) {
+            closestNodes = checkAndInsert(id, Node.toNodeInfo(kBuckets[indexToSearch].get(i)), closestNodes);
+        }
+
+        /*  Remove the nodes we don't want to contact.
+            This is used only when we already contacted some nodes and don't want to contact them again,
+            to avoid having communication loops in the network. */
+        for (NodeInfo node : contactedNodes) {
+            closestNodes.remove(node);
+        }
+
+        int prevAbs = Math.abs(indexToSearch - indexOffset);
+
+        indexOffset = adjustOffset(indexOffset);
+
+        // If the closestNodes is filled...
+        if (closestNodes.size() == Executable.K)
+            // ... and there are no more nodes that may be closer...
+            if (prevAbs != Math.abs(indexToSearch - indexOffset))
+                return closestNodes;
+
+        return getClosestNodes(id, indexToSearch, indexOffset, closestNodes, contactedNodes);
+    }
+
+
+    public static LinkedList<NodeInfo> getClosestNodes(String id, int indexToSearch) {
+        return getClosestNodes(id, indexToSearch, 0, new LinkedList<>(), new LinkedList<>());
+    }
+
+    public static LinkedList<NodeInfo> getClosestNodes(String id, int indexToSearch,
+                                                       LinkedList<NodeInfo> contactedNodes) {
+        return getClosestNodes(id, indexToSearch, 0, new LinkedList<>(), contactedNodes);
+    }
+
+    public static void performStoreRequest(Block newBlock, LinkedList<NodeInfo> closestNodes,
+                                           LinkedList<NodeInfo> contactedNodes) {
+        contactedNodes.addAll(closestNodes);
+
+        for (NodeInfo node : closestNodes) {
+            P2PClientRPC p2pClientRPC = new P2PClientRPC(node.getAddress(), node.getPort());
+
+            p2pClientRPC.store(Block.blockToBlockData(newBlock), Node.toNodes(contactedNodes));
+            try {
+                p2pClientRPC.shutdown();
+            } catch (InterruptedException e) {
+                System.out.println("ERROR: Couldn't close P2PClient. (gRPC connection)");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static void performStoreRequest(Block newBlock, LinkedList<NodeInfo> closestNodes) {
+        performStoreRequest(newBlock, closestNodes, new LinkedList<>());
     }
 
     public static void main(String[] args) {
@@ -245,20 +366,31 @@ public class Executable {
             return;
         }
 
-        processJoin(joinResult);
+        // Force the new node to perform a initial computation.
+        // This computation has no objective other than making it harder to perform an Eclipse attack.
+        try {
+            forceComputation();
+        } catch (NoSuchAlgorithmException e) {
+            System.out.println("Couldn't perform the initial computation. Exiting...");
+            System.exit(0);
+        }
 
+        processJoin(joinResult);
 
         // Client joined the network. It should start computing new blocks.
         while(true) {
             try {
-                HashCash.mintCash(UUID.randomUUID().toString(), 32);
-
-                // TODO: The block was created. Try to add it to the blockchain.
+                HashCash.mintCash(UUID.randomUUID().toString(), 26);
 
                 // TODO: Create a real transactions list
                 LinkedList<String> transactions = new LinkedList<>();
 
                 Block newBlock = new Block(MerkleRoot.computeMerkleRoot(transactions), transactions);
+
+                // Get the K closest nodes to the block's merkle root hash
+                int index = calculateKBucket(newBlock.getMerkleRoot());
+                LinkedList<NodeInfo> closestNodes = getClosestNodes(newBlock.getMerkleRoot(), index);
+                performStoreRequest(newBlock, closestNodes);
             } catch (NoSuchAlgorithmException e) {
                 System.out.println("Couldn't compute new blocks. Exiting...");
                 return;

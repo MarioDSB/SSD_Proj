@@ -7,8 +7,8 @@ package GrupoB.gRPCService.ClientProto;
 
 service Client {
     rpc ping (EmptyMessage) returns (BooleanMessage) {}
-    rpc store (BlockData) returns (EmptyMessage) {}
-    rpc findNode (NodeID) returns (Nodes) {}
+    rpc store (StoreData) returns (EmptyMessage) {}
+    rpc findNode (NodeInfo) returns (Nodes) {}
     rpc getBlockchain (EmptyMessage) returns (Blocks) {}
 }
 
@@ -21,6 +21,11 @@ message BooleanMessage {
 
 message Blocks {
     repeated BlockData block = 1;
+}
+
+message StoreData {
+    BlockData block = 1;
+    Nodes nodes = 2;
 }
 
 message BlockData {
