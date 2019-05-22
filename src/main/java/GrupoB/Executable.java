@@ -153,8 +153,8 @@ public class Executable {
      * This computation has no objective other than making it harder to perform an Eclipse Attack.
      * @throws NoSuchAlgorithmException SHA-1 not supported
      */
-    private static void forceComputation() throws NoSuchAlgorithmException {
-        HashCash.mintCash(UUID.randomUUID().toString(), 30);
+    private static String forceComputation() throws NoSuchAlgorithmException {
+        return HashCash.mintCash(UUID.randomUUID().toString(), 26).toString();
     }
 
     private static void processJoin(NetInfo joinResult) {
@@ -406,20 +406,21 @@ public class Executable {
 
         // Force the new node to perform a initial computation.
         // This computation has no objective other than making it harder to perform an Eclipse attack.
+        String work;
         try {
-            forceComputation();
+            work = forceComputation();
         } catch (NoSuchAlgorithmException e) {
             System.out.println("Couldn't perform the initial computation. Exiting...");
             return;
         }
 
-        initKBuckets();
-        NetInfo joinResult = netClient.join();
-        if (joinResult == null) {
+        NetInfo joinResult = netClient.join(work);
+        if (joinResult.nodeID.equals("")) {
             System.out.println("ERROR: Couldn't join the network. Exiting...");
             return;
         }
 
+        initKBuckets();
         processJoin(joinResult);
 
         // Client joined the network. It should start computing new blocks.

@@ -67,7 +67,7 @@ public class NetClientRPC {
     }
 
     /** Join the network*/
-    public NetworkInfo join(String address, int port) {
+    public NetworkInfo join(String address, int port, String work) {
         try {
             logger.info("Will try to join the network...");
             Executable.transactions.add("Will try to join the network...");
@@ -75,6 +75,7 @@ public class NetClientRPC {
             NodeJoin request = NodeJoin.newBuilder()
                     .setAddress(address)
                     .setPort(port)
+                    .setWork(work)
                     .build();
 
             return blockingStub.join(request);

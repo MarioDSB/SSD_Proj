@@ -38,11 +38,12 @@ public class NetworkClient {
         }
     }
 
-    public NetInfo join() {
+    public NetInfo join(String work) {
         try {
             JoinRequest jr = new JoinRequest();
             jr.address = this.address;
             jr.port = this.port;
+            jr.work = work;
 
             return client.target(baseURI).path("central/join")
                     .request(MediaType.APPLICATION_JSON)

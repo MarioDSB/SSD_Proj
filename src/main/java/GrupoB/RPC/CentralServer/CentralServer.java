@@ -1,5 +1,6 @@
 package GrupoB.RPC.CentralServer;
 
+import GrupoB.Utils.HashCash;
 import GrupoB.gRPCService.ServerProto.*;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -70,6 +71,14 @@ public class CentralServer {
 
         private NetworkInfo joinImpl(NodeJoin request) {
             NetworkInfo.Builder builder = NetworkInfo.newBuilder();
+
+            // Check if the client has made the initial work
+            try {
+                new HashCash(request.getWork());
+            } catch (Exception ignored) {
+                logger.info("A client hasn't made the necessary work to join the network...");
+                return builder.build();
+            }
 
             String id = "";
             // Check if the node has already connected. If it has,

@@ -15,6 +15,11 @@ public class NetInfo {
         NetInfo netInfo = new NetInfo();
 
         netInfo.nodeID = networkInfo.getNodeID();
+        if (netInfo.nodeID.equals("")) {
+            // The node wasn't able to join the network
+            return netInfo;
+        }
+
         if (!networkInfo.getPeer().equals(NodeInfo.getDefaultInstance()))
             netInfo.peer = Node.fromNodeInfo(networkInfo.getPeer());
         else
