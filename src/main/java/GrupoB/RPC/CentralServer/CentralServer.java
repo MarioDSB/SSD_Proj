@@ -25,6 +25,10 @@ public class CentralServer {
 
     private List<NodeInfo> nodes = new LinkedList<>();
 
+    // True, if the network is using Proof of Work (PoW).
+    // False, if the network is using Proof of Stake (PoS).
+    private boolean pow = true;
+
     private void start() throws Exception {
         server = ServerBuilder.forPort(PORT)
                 .addService(ServerGrpc.bindService(new ServerProtoImpl()))
@@ -103,7 +107,7 @@ public class CentralServer {
 
             logger.info("Number of connected nodes: " + nodes.size());
 
-            return builder.build();
+            return builder.setPow(pow).build();
         }
 
         @Override

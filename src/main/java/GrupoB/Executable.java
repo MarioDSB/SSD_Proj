@@ -7,14 +7,14 @@ import GrupoB.Blockchain.MerkleRoot;
 import GrupoB.Client.NetworkClient;
 import GrupoB.RPC.P2PClient.P2PClientRPC;
 import GrupoB.Utils.HashCash;
+import GrupoB.Utils.NetUtils;
 import GrupoB.gRPCService.ClientProto.NodeInfo;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 public class Executable {
-    //TODO: Get the real public IP address (by argv[] or by coding like the IPTest)
-    private final static String ADDRESS = "localhost";
+    private static String ADDRESS = "localhost";
     private final static int PORT = 9595;
 
     // Maximum contacts stored in a kBucket
@@ -22,12 +22,16 @@ public class Executable {
     // NodeID bit size
     private final static int keySize = 256;
 
+    public static LinkedList<String> transactions = new LinkedList<>();
+
     private static String nodeID;
 
     @SuppressWarnings("unchecked")
     private static ArrayList<Node>[] kBuckets = new ArrayList[keySize];
 
     public static List<Block> blockChain = new LinkedList<>();
+
+    private static boolean pow = true;
 
     private static NetworkClient initNetClient() {
         return new NetworkClient(ADDRESS, PORT);
@@ -155,6 +159,7 @@ public class Executable {
 
     private static void processJoin(NetInfo joinResult) {
         nodeID = joinResult.nodeID;
+        pow = joinResult.pow;
 
         System.out.println("Successfully joined the network. My nodeID is " + nodeID);
 
@@ -332,13 +337,13 @@ public class Executable {
     }
 
     public static void performStoreRequest(Block newBlock, LinkedList<NodeInfo> closestNodes,
-                                           LinkedList<NodeInfo> contactedNodes) {
+                                           LinkedList<NodeInfo> contactedNodes, String cash) {
         contactedNodes.addAll(closestNodes);
 
         for (NodeInfo node : closestNodes) {
             P2PClientRPC p2pClientRPC = new P2PClientRPC(node.getAddress(), node.getPort());
 
-            p2pClientRPC.store(Block.blockToBlockData(newBlock), Node.toNodes(contactedNodes));
+            p2pClientRPC.store(Block.blockToBlockData(newBlock), Node.toNodes(contactedNodes), cash);
             try {
                 p2pClientRPC.shutdown();
             } catch (InterruptedException e) {
@@ -348,15 +353,63 @@ public class Executable {
         }
     }
 
-    private static void performStoreRequest(Block newBlock, LinkedList<NodeInfo> closestNodes) {
-        performStoreRequest(newBlock, closestNodes, new LinkedList<>());
+    private static void performStoreRequest(Block newBlock, LinkedList<NodeInfo> closestNodes, String cash) {
+        performStoreRequest(newBlock, closestNodes, new LinkedList<>(), cash);
     }
 
+    /**
+     * Starts computing new blocks, using the Proof of Work method.
+     */
+    private static void proofOfWork() {
+        while(true) {
+            try {
+                String cash = HashCash.mintCash(UUID.randomUUID().toString(), 26).toString();
+
+                Block newBlock = new Block(MerkleRoot.computeMerkleRoot(transactions), transactions);
+
+                // Now that the new block has been created, the transactions have been saved in the blockchain.
+                // Reset the transactions list, so that we can save other transactions again.
+                transactions.clear();
+
+                // Get the K closest nodes to the block's merkle root hash
+                int index = calculateKBucket(newBlock.getMerkleRoot());
+                LinkedList<NodeInfo> closestNodes = getClosestNodes(newBlock.getMerkleRoot(), index);
+                performStoreRequest(newBlock, closestNodes, cash);
+            } catch (NoSuchAlgorithmException e) {
+                System.out.println("Couldn't compute new blocks. Exiting...");
+                return;
+            }
+        }
+    }
+
+    // TODO: Do Proof of Stake method
+    private static void proofOfStake() {
+    }
+
+    /**
+     * Starts the application that lets the client generate blocks.
+     * @param args No arguments need to be provided
+     */
     public static void main(String[] args) {
+        ADDRESS = NetUtils.getLocalIP();
+        if (ADDRESS == null) {
+            System.out.println("Couldn't get this machine's IP address. Exiting...");
+            return;
+        }
+
         NetworkClient netClient = initNetClient();
 
         if(!netClient.ping()) {
             System.out.println("ERROR: Couldn't contact central server. Exiting...");
+            return;
+        }
+
+        // Force the new node to perform a initial computation.
+        // This computation has no objective other than making it harder to perform an Eclipse attack.
+        try {
+            forceComputation();
+        } catch (NoSuchAlgorithmException e) {
+            System.out.println("Couldn't perform the initial computation. Exiting...");
             return;
         }
 
@@ -367,35 +420,13 @@ public class Executable {
             return;
         }
 
-        // Force the new node to perform a initial computation.
-        // This computation has no objective other than making it harder to perform an Eclipse attack.
-        try {
-            forceComputation();
-        } catch (NoSuchAlgorithmException e) {
-            System.out.println("Couldn't perform the initial computation. Exiting...");
-            System.exit(0);
-        }
-
         processJoin(joinResult);
 
         // Client joined the network. It should start computing new blocks.
-        while(true) {
-            try {
-                HashCash.mintCash(UUID.randomUUID().toString(), 26);
-
-                // TODO: Create a real transactions list
-                LinkedList<String> transactions = new LinkedList<>();
-
-                Block newBlock = new Block(MerkleRoot.computeMerkleRoot(transactions), transactions);
-
-                // Get the K closest nodes to the block's merkle root hash
-                int index = calculateKBucket(newBlock.getMerkleRoot());
-                LinkedList<NodeInfo> closestNodes = getClosestNodes(newBlock.getMerkleRoot(), index);
-                performStoreRequest(newBlock, closestNodes);
-            } catch (NoSuchAlgorithmException e) {
-                System.out.println("Couldn't compute new blocks. Exiting...");
-                return;
-            }
+        if (pow) {
+            proofOfWork();
+        } else {
+            proofOfStake();
         }
     }
 }

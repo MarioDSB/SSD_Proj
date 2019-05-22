@@ -9,6 +9,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class NetInfo {
     public String nodeID;
     public Node peer;
+    public boolean pow;
 
     public static NetInfo fromNetworkInfo(NetworkInfo networkInfo) {
         NetInfo netInfo = new NetInfo();
@@ -18,6 +19,8 @@ public class NetInfo {
             netInfo.peer = Node.fromNodeInfo(networkInfo.getPeer());
         else
             netInfo.peer = null;
+
+        netInfo.pow = networkInfo.getPow();
 
         return netInfo;
     }

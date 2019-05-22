@@ -1,6 +1,7 @@
 package GrupoB.RPC.P2PClient;
 
 import GrupoB.Blockchain.Block;
+import GrupoB.Executable;
 import GrupoB.gRPCService.ClientProto.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -31,12 +32,14 @@ public class P2PClientRPC {
     /** Ping the peer */
     public boolean ping() {
         try {
-            logger.info("Will try to ping the peer...");
+            logger.info("Will try to ping a peer...");
+            Executable.transactions.add("Will try to ping a peer...");
             EmptyMessage request = EmptyMessage.newBuilder().build();
             BooleanMessage response = blockingStub.ping(request);
 
             return response.getResult();
         } catch (RuntimeException re) {
+            Executable.transactions.add("RPC failed");
             logger.log(Level.WARNING, "RPC failed", re);
         }
 
@@ -51,6 +54,7 @@ public class P2PClientRPC {
     public List<NodeInfo> findNode(String address, int port, String nodeID) {
         try {
             logger.info("Will try to find node " + nodeID + "...");
+            Executable.transactions.add("Will try to find node " + nodeID + "...");
             NodeInfo request = NodeInfo.newBuilder()
                     .setAddress(address)
                     .setPort(port)
@@ -59,23 +63,27 @@ public class P2PClientRPC {
 
             return blockingStub.findNode(request).getNodesList();
         } catch (RuntimeException re) {
+            Executable.transactions.add("RPC failed");
             logger.log(Level.WARNING, "RPC failed", re);
         }
 
         return null;
     }
 
-    public void store(BlockData newBlock, Nodes contactedNodes) {
+    public void store(BlockData newBlock, Nodes contactedNodes, String cash) {
         try {
             logger.info("Will try to send a request to store a block...");
+            Executable.transactions.add("Will try to send a request to store a block...");
 
             StoreData request = StoreData.newBuilder()
                     .setBlock(newBlock)
                     .setNodes(contactedNodes)
+                    .setCash(cash)
                     .build();
 
             blockingStub.store(request);
         } catch (RuntimeException re) {
+            Executable.transactions.add("RPC failed");
             logger.log(Level.WARNING, "RPC failed", re);
         }
     }
@@ -83,11 +91,14 @@ public class P2PClientRPC {
     public LinkedList<Block> getBlockchain() {
         try {
             logger.info("Will try to get the blockchain...");
+            Executable.transactions.add("Will try to get the blockchain...");
+
             EmptyMessage request = EmptyMessage.newBuilder().build();
             Blocks blocks = blockingStub.getBlockchain(request);
 
             return Block.blockListFromBlocks(blocks);
         } catch (RuntimeException re) {
+            Executable.transactions.add("RPC failed");
             logger.log(Level.WARNING, "RPC failed", re);
         }
 

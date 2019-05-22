@@ -26,10 +26,10 @@ message Blocks {
 message StoreData {
     BlockData block = 1;
     Nodes nodes = 2;
+    string cash = 3;
 }
 
 message BlockData {
-    // TODO: Check if prevBlockHash and blockID is needed
     string merkleRoot = 1;
     repeated string transaction = 2;
 }

@@ -3,6 +3,7 @@ package GrupoB.RPC.P2PServer;
 import GrupoB.ApplicationServer.Models.Node;
 import GrupoB.Blockchain.Block;
 import GrupoB.Executable;
+import GrupoB.Utils.HashCash;
 import GrupoB.gRPCService.ClientProto.*;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -61,6 +62,7 @@ public class P2PServer {
         @Override
         public void ping(EmptyMessage request, StreamObserver<BooleanMessage> responseObserver) {
             logger.log(Level.INFO, "Receiving ping. Responding...");
+            Executable.transactions.add("Receiving ping. Responding...");
 
             responseObserver.onNext(BooleanMessage.newBuilder().setResult(true).build());
             responseObserver.onCompleted();
@@ -73,7 +75,17 @@ public class P2PServer {
          *                  of nodes that have already been contacted
          */
         private void storeImpl(StoreData storeData) {
-            // Try to add the new block to the block chain, verifying it
+            // Validates the generated token. If it is good, the processing continues. If it is bad,
+            // the new block is discarded and no other node is notified about it.
+            try {
+                new HashCash(storeData.getCash());
+            } catch (Exception ignored) {
+                logger.log(Level.INFO, "Couldn't validate the hashCash token. Discarding the new block...");
+                Executable.transactions.add("Couldn't validate the hashCash token. Discarding the new block...");
+                return;
+            }
+
+            // Try to add the new block to the block chain, verifying that the merkle root matches the transitions
             if (Block.blockFromBlockData(storeData.getBlock()).verifyBlock())
                 Executable.blockChain.add(Block.blockFromBlockData(storeData.getBlock()));
             else
@@ -86,12 +98,14 @@ public class P2PServer {
             LinkedList<NodeInfo> closestNodes = Executable.getClosestNodes(storeData.getBlock().getMerkleRoot(), index,
                     contactedNodes);
 
-            Executable.performStoreRequest(Block.blockFromBlockData(storeData.getBlock()), closestNodes, contactedNodes);
+            Executable.performStoreRequest(Block.blockFromBlockData(storeData.getBlock()), closestNodes,
+                    contactedNodes, storeData.getCash());
         }
 
         @Override
         public void store(StoreData request, StreamObserver<EmptyMessage> responseObserver) {
-            logger.log(Level.INFO, "Receiving STORE request. Processing...");
+            logger.info("Receiving STORE request. Processing...");
+            Executable.transactions.add("Receiving STORE request. Processing...");
 
             responseObserver.onNext(EmptyMessage.newBuilder().build());
             responseObserver.onCompleted();
@@ -119,7 +133,8 @@ public class P2PServer {
 
         @Override
         public void findNode(NodeInfo request, StreamObserver<Nodes> responseObserver) {
-            logger.log(Level.INFO, "Receiving FIND_NODE request. Responding...");
+            logger.info("Receiving FIND_NODE request. Responding...");
+            Executable.transactions.add("Receiving FIND_NODE request. Responding...");
 
             responseObserver.onNext(findNodeImpl(request));
             responseObserver.onCompleted();
@@ -136,7 +151,8 @@ public class P2PServer {
 
         @Override
         public void getBlockchain(EmptyMessage request, StreamObserver<Blocks> responseObserver) {
-            logger.log(Level.INFO, "Receiving GET_BLOCKCHAIN request. Responding...");
+            logger.info("Receiving GET_BLOCKCHAIN request. Responding...");
+            Executable.transactions.add("Receiving GET_BLOCKCHAIN request. Responding...");
 
             responseObserver.onNext(getBCImpl());
             responseObserver.onCompleted();

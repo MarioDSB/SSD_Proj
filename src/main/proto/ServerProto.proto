@@ -18,6 +18,7 @@ message NodeJoin {
 message NetworkInfo {
     string nodeID = 1;
     NodeInfo peer = 2;
+    bool pow = 3;
 }
 
 message NodeInfo {

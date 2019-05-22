@@ -19,7 +19,11 @@ public class TestHashCash {
     public static void main(String[] args) {
         long start = System.currentTimeMillis();
         try {
-            HashCash.mintCash(UUID.randomUUID().toString(), 26);
+            String cash = HashCash.mintCash(UUID.randomUUID().toString(), 12).toString();
+
+            HashCash hashCash = new HashCash(cash);
+
+            System.out.println(cash);
         } catch (Exception e) {
             e.printStackTrace();
         }
