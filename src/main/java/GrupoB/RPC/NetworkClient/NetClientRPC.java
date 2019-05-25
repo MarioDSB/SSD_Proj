@@ -50,9 +50,16 @@ public class NetClientRPC {
 
     /** Ping the server */
     public boolean ping() {
+        Boolean response = getABoolean("Will try to ping the central server...");
+        if (response != null) return response;
+
+        return false;
+    }
+
+    private Boolean getABoolean(String s) {
         try {
-            logger.info("Will try to ping the central server...");
-            Executable.transactions.add("Will try to ping the central server...");
+            logger.info(s);
+            Executable.transactions.add(s);
 
             EmptyMessage request = EmptyMessage.newBuilder().build();
             BooleanMessage response = blockingStub.ping(request);
@@ -62,8 +69,7 @@ public class NetClientRPC {
             logger.log(Level.WARNING, "RPC failed", re);
             Executable.transactions.add("RPC failed");
         }
-
-        return false;
+        return null;
     }
 
     /** Join the network*/
@@ -85,6 +91,29 @@ public class NetClientRPC {
         }
 
         return null;
+    }
+
+    public NodeInfo generateBlock() {
+        try {
+            logger.info("Will try to get who is generating the block...");
+            Executable.transactions.add("Will try to get who is generating the block...");
+
+            EmptyMessage request = EmptyMessage.newBuilder().build();
+
+            return blockingStub.generateBlock(request);
+        } catch (RuntimeException re) {
+            logger.log(Level.WARNING, "RPC failed", re);
+            Executable.transactions.add("RPC failed");
+        }
+
+        return null;
+    }
+
+    public boolean generation() {
+        Boolean response = getABoolean("Will try to signal the central server that a block was generated...");
+        if (response != null) return response;
+
+        return false;
     }
 
     // Just for testing

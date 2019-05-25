@@ -6,14 +6,7 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,6 +18,8 @@ public class CentralServer {
     private Server server;
 
     private List<NodeInfo> nodes = new LinkedList<>();
+
+    private NodeInfo generator;
 
     // True, if the network is using Proof of Work (PoW).
     // False, if the network is using Proof of Stake (PoS).
@@ -107,12 +102,14 @@ public class CentralServer {
                 builder.setPeer(nodes.get(index));
             }
 
-            // Add the "new" node to the nodes' list
-            nodes.add(NodeInfo.newBuilder()
+            NodeInfo newNode = NodeInfo.newBuilder()
                     .setAddress(request.getAddress())
                     .setPort(request.getPort())
                     .setNodeID(id)
-                    .build());
+                    .build();
+
+            // Add the "new" node to the nodes' list
+            nodes.add(newNode);
 
             logger.info("Number of connected nodes: " + nodes.size());
 
@@ -125,6 +122,45 @@ public class CentralServer {
 
             responseObserver.onNext(joinImpl(request));
             responseObserver.onCompleted();
+        }
+
+        private NodeInfo genImpl() {
+            NodeInfo.Builder builder = NodeInfo.newBuilder();
+
+            if (nodes.size() == 1) {
+                NodeInfo node = nodes.get(0);
+
+                generator = node;
+
+                return builder.setAddress(node.getAddress())
+                        .setPort(node.getPort())
+                        .setNodeID(node.getNodeID())
+                        .build();
+            } else {
+                return generator;
+            }
+        }
+
+        @Override
+        public void generateBlock(EmptyMessage request, StreamObserver<NodeInfo> responseObserver) {
+            responseObserver.onNext(genImpl());
+            responseObserver.onCompleted();
+        }
+
+        private int getRandomNumberInRange(int max) {
+            Random r = new Random();
+            return r.nextInt(max + 1);
+        }
+
+        /**
+         * Gets a new block generator. This function is only called when the current generator
+         * finishes its new block generation.
+         */
+        @Override
+        public void generation(EmptyMessage request, StreamObserver<BooleanMessage> responseObserver) {
+            int generatorIndex = getRandomNumberInRange(nodes.size() - 1);
+
+            generator = nodes.get(generatorIndex);
         }
 
         @Override

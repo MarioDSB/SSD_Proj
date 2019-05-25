@@ -31,6 +31,8 @@ public class Executable {
 
     public static List<Block> blockChain = new LinkedList<>();
 
+    private static NetworkClient netClient;
+
     private static boolean pow = true;
 
     private static NetworkClient initNetClient() {
@@ -382,8 +384,54 @@ public class Executable {
         }
     }
 
+    private static void performStorePoS(Block newBlock, LinkedList<NodeInfo> closestNodes,
+                                        LinkedList<NodeInfo> contactedNodes) {
+        contactedNodes.addAll(closestNodes);
+
+        for (NodeInfo node : closestNodes) {
+            P2PClientRPC p2pClientRPC = new P2PClientRPC(node.getAddress(), node.getPort());
+
+            p2pClientRPC.store(Block.blockToBlockData(newBlock), Node.toNodes(contactedNodes));
+            try {
+                p2pClientRPC.shutdown();
+            } catch (InterruptedException e) {
+                System.out.println("ERROR: Couldn't close P2PClient. (gRPC connection)");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static void performStorePoS(Block newBlock, LinkedList<NodeInfo> closestNodes) {
+        performStorePoS(newBlock, closestNodes, new LinkedList<>());
+    }
+
     // TODO: Do Proof of Stake method
     private static void proofOfStake() {
+        while(true) {
+            // This node is the one generating the block
+            Node currentGenerator = netClient.generateBlock();
+
+            if (currentGenerator.getId().equals(nodeID)) {
+                Block newBlock = new Block(MerkleRoot.computeMerkleRoot(transactions), transactions);
+
+                // Now that the new block has been created, the transactions have been saved in the blockchain.
+                // Reset the transactions list, so that we can save other transactions again.
+                transactions.clear();
+
+                netClient.blockGenerated();
+
+                // Get the K closest nodes to the block's merkle root hash
+                int index = calculateKBucket(newBlock.getMerkleRoot());
+                LinkedList<NodeInfo> closestNodes = getClosestNodes(newBlock.getMerkleRoot(), index);
+                performStorePoS(newBlock, closestNodes);
+            } else {
+                int currentBCSize = blockChain.size();
+
+                // This condition is met when this node receives a store request
+                while(currentBCSize == blockChain.size()) {
+                }
+            }
+        }
     }
 
     /**
@@ -397,7 +445,7 @@ public class Executable {
             return;
         }
 
-        NetworkClient netClient = initNetClient();
+        netClient = initNetClient();
 
         if(!netClient.ping()) {
             System.out.println("ERROR: Couldn't contact central server. Exiting...");

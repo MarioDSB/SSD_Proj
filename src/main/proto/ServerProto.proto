@@ -8,6 +8,8 @@ package GrupoB.gRPCService.ServerProto;
 service Server {
     rpc ping (EmptyMessage) returns (BooleanMessage) {}
     rpc join (NodeJoin) returns (NetworkInfo) {}
+    rpc generateBlock (EmptyMessage) returns (NodeInfo) {}
+    rpc generation (EmptyMessage) returns (BooleanMessage) {}
 }
 
 message NodeJoin {

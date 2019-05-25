@@ -70,6 +70,23 @@ public class P2PClientRPC {
         return null;
     }
 
+    public void store(BlockData newBlock, Nodes contactedNodes) {
+        try {
+            logger.info("Will try to send a request to store a block...");
+            Executable.transactions.add("Will try to send a request to store a block...");
+
+            StoreData request = StoreData.newBuilder()
+                    .setBlock(newBlock)
+                    .setNodes(contactedNodes)
+                    .build();
+
+            blockingStub.storePoS(request);
+        } catch (RuntimeException re) {
+            Executable.transactions.add("RPC failed");
+            logger.log(Level.WARNING, "RPC failed", re);
+        }
+    }
+
     public void store(BlockData newBlock, Nodes contactedNodes, String cash) {
         try {
             logger.info("Will try to send a request to store a block...");

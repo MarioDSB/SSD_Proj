@@ -35,4 +35,18 @@ public class CentralServerService {
         System.out.println(jr.address + ":" + jr.port + " is joining...");
         return NetInfo.fromNetworkInfo(CentralClient.client.join(jr.address, jr.port, jr.work));
     }
+
+    @GET
+    @Path("/generate")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Node generateBlock() {
+        return Node.fromNodeInfo(CentralClient.client.generateBlock());
+    }
+
+    @GET
+    @Path("/generation")
+    @Produces(MediaType.APPLICATION_JSON)
+    public boolean generation() {
+        return CentralClient.client.generation();
+    }
 }

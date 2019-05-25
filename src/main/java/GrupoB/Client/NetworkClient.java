@@ -52,4 +52,28 @@ public class NetworkClient {
             return null;
         }
     }
+
+    /**
+     * Gets the node that is currently generating the new block
+     * @return the node that is generating the new block
+     */
+    public Node generateBlock() {
+        try {
+            return client.target(baseURI).path("central/generate")
+                    .request(MediaType.APPLICATION_JSON)
+                    .get(Node.class);
+        } catch (NotFoundException ignored) {
+            return null;
+        }
+    }
+
+    /**
+     * Signals the tracker that a new block was generated
+     * This function is only used when the network is in PoS mode
+     */
+    public void blockGenerated() {
+        client.target(baseURI).path("central/generation")
+                .request(MediaType.APPLICATION_JSON)
+                .get();
+    }
 }

@@ -74,15 +74,17 @@ public class P2PServer {
          * @param storeData The store request. It saves the block itself and keeps track
          *                  of nodes that have already been contacted
          */
-        private void storeImpl(StoreData storeData) {
-            // Validates the generated token. If it is good, the processing continues. If it is bad,
-            // the new block is discarded and no other node is notified about it.
-            try {
-                new HashCash(storeData.getCash());
-            } catch (Exception ignored) {
-                logger.log(Level.INFO, "Couldn't validate the hashCash token. Discarding the new block...");
-                Executable.transactions.add("Couldn't validate the hashCash token. Discarding the new block...");
-                return;
+        private void storeImpl(StoreData storeData, boolean pow) {
+            if (pow) {
+                // Validates the generated token. If it is good, the processing continues. If it is bad,
+                // the new block is discarded and no other node is notified about it.
+                try {
+                    new HashCash(storeData.getCash());
+                } catch (Exception ignored) {
+                    logger.log(Level.INFO, "Couldn't validate the hashCash token. Discarding the new block...");
+                    Executable.transactions.add("Couldn't validate the hashCash token. Discarding the new block...");
+                    return;
+                }
             }
 
             // Try to add the new block to the block chain, verifying that the merkle root matches the transitions
@@ -112,7 +114,20 @@ public class P2PServer {
 
             // Contact other nodes AFTER responding to the sender. That way, the sender can continue working
             // without having to wait for the block to be propagated to the entire network
-            storeImpl(request);
+            storeImpl(request, true);
+        }
+
+        @Override
+        public void storePoS(StoreData request, StreamObserver<EmptyMessage> responseObserver) {
+            logger.info("Receiving STORE request. Processing...");
+            Executable.transactions.add("Receiving STORE request. Processing...");
+
+            responseObserver.onNext(EmptyMessage.newBuilder().build());
+            responseObserver.onCompleted();
+
+            // Contact other nodes AFTER responding to the sender. That way, the sender can continue working
+            // without having to wait for the block to be propagated to the entire network
+            storeImpl(request, false);
         }
 
         private Nodes findNodeImpl(NodeInfo nodeID) {
