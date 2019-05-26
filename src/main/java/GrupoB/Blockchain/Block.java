@@ -4,22 +4,28 @@ import GrupoB.gRPCService.ClientProto.BlockData;
 import GrupoB.gRPCService.ClientProto.Blocks;
 
 import java.util.LinkedList;
+import java.util.UUID;
 
 // Check https://learnmeabitcoin.com/guide/difficulty for hints on difficulty
 // NOTE: Make difficulty final. Some X bits of difficulty, all the time.
 public class Block {
     // private String prevBlockHash;
-    // private String blockID;
+    private String blockID;
     private String merkleRoot;
 
     private LinkedList<String> transactions;
 
-    public Block(/*String prevBlockHash, String blockID,*/
-                 String merkleRoot, LinkedList<String> transactions) {
-        // this.prevBlockHash = prevBlockHash;
-        // this.blockID = blockID;
+    public Block(String merkleRoot, LinkedList<String> transactions) {
+        String uuid = UUID.randomUUID().toString().replace("-", "");
+
+        // We only use 1/4 of the generated uuid (Like when generating nodeIDs)
+        this.blockID = String.valueOf(uuid.toCharArray(), 0, uuid.length() / 4);
         this.merkleRoot = merkleRoot;
         this.transactions = transactions;
+    }
+
+    public String getBlockID() {
+        return blockID;
     }
 
     public String getMerkleRoot() {

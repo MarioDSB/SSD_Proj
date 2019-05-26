@@ -91,8 +91,12 @@ public class CentralServer {
             }
 
             // No recorded connection from <address>:<port>. Generate a random nodeID.
-            if (id.equals(""))
-                id = UUID.randomUUID().toString().replace("-", "");
+            if (id.equals("")) {
+                String uuid = UUID.randomUUID().toString().replace("-", "");
+
+                // We only use 1/4 of the generated uuid
+                id = String.valueOf(uuid.toCharArray(), 0, uuid.length() / 4);
+            }
 
             builder.setNodeID(id);
 
@@ -118,7 +122,8 @@ public class CentralServer {
 
         @Override
         public void join(NodeJoin request, StreamObserver<NetworkInfo> responseObserver) {
-            logger.log(Level.INFO, "Receiving join request. Responding...");
+            logger.log(Level.INFO, "Receiving join request from " + request.getAddress() + ":" + request.getPort()
+                    + ". Processing...");
 
             responseObserver.onNext(joinImpl(request));
             responseObserver.onCompleted();

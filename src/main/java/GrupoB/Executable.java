@@ -5,6 +5,7 @@ import GrupoB.ApplicationServer.Models.Node;
 import GrupoB.Blockchain.Block;
 import GrupoB.Blockchain.MerkleRoot;
 import GrupoB.Client.NetworkClient;
+import GrupoB.RPC.NetworkClient.NetClientRPC;
 import GrupoB.RPC.P2PClient.P2PClientRPC;
 import GrupoB.Utils.HashCash;
 import GrupoB.Utils.NetUtils;
@@ -14,8 +15,11 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 public class Executable {
-    private static String ADDRESS = "localhost";
+    private static String ADDRESS = "";
     private final static int PORT = 9595;
+
+    private static String SERVER_ADDRESS = "localhost";
+    private static int SERVER_PORT = 50051;
 
     // Maximum contacts stored in a kBucket
     private final static int K = 3;
@@ -31,12 +35,18 @@ public class Executable {
 
     public static List<Block> blockChain = new LinkedList<>();
 
-    private static NetworkClient netClient;
+    // private static NetworkClient netClient;
+
+    private static NetClientRPC netClient;
 
     private static boolean pow = true;
 
-    private static NetworkClient initNetClient() {
+    private static NetworkClient initNetworkClient() {
         return new NetworkClient(ADDRESS, PORT);
+    }
+
+    private static NetClientRPC initNetClient() {
+        return new NetClientRPC(SERVER_ADDRESS, SERVER_PORT);
     }
 
     private static void initKBuckets() {
@@ -50,9 +60,9 @@ public class Executable {
      * @param node2 Second nodeID
      * @return The distance between node1 and node2
      */
-    private static int calculateDistance(String node1, String node2) {
-        int myDecimalID = Integer.parseInt(node1);
-        int peerDecimalID = Integer.parseInt(node2);
+    private static long calculateDistance(String node1, String node2) {
+        long myDecimalID = Long.parseLong(node1, 16);
+        long peerDecimalID = Long.parseLong(node2, 16);
 
         return myDecimalID ^ peerDecimalID;
     }
@@ -63,7 +73,7 @@ public class Executable {
      * @return The kBucket in which the peer belongs
      */
     public static int calculateKBucket(String peerID) {
-        int distance = calculateDistance(nodeID, peerID);
+        long distance = calculateDistance(nodeID, peerID);
 
         for (int i = 0; i < keySize; i++)
             if (Math.pow(2, i) < distance && Math.pow(2, i + 1) > distance)
@@ -137,10 +147,10 @@ public class Executable {
      */
     private static NodeInfo getClosestNode(String nodeID, List<NodeInfo> nodeQueue) {
         NodeInfo closestNode = null;
-        int closestDistance = Integer.MAX_VALUE;
+        long closestDistance = Long.MAX_VALUE;
 
         for (NodeInfo node : nodeQueue) {
-            int distance = calculateDistance(nodeID, node.getNodeID());
+            long distance = calculateDistance(nodeID, node.getNodeID());
             if (distance < closestDistance) {
                 closestDistance = distance;
                 closestNode = node;
@@ -244,10 +254,10 @@ public class Executable {
 
         // Get the furthest node from the nodeID
         NodeInfo furthestNode = closestNodes.get(0);
-        int maxDistance = calculateDistance(nodeID, furthestNode.getNodeID());
+        long maxDistance = calculateDistance(nodeID, furthestNode.getNodeID());
 
         for (int i = 1; i < closestNodes.size(); i++) {
-            int aux = calculateDistance(nodeID, closestNodes.get(i).getNodeID());
+            long aux = calculateDistance(nodeID, closestNodes.get(i).getNodeID());
             if (aux > maxDistance) {
                 maxDistance = aux;
                 furthestNode = closestNodes.get(i);
@@ -304,7 +314,7 @@ public class Executable {
             return getClosestNodes(id, indexToSearch, indexOffset, closestNodes, contactedNodes);
         }
 
-        for (int i = 0; i < K; i++) {
+        for (int i = 0; i < kBuckets[indexToSearch].size(); i++) {
             closestNodes = checkAndInsert(id, Node.toNodeInfo(kBuckets[indexToSearch].get(i)), closestNodes);
         }
 
@@ -369,14 +379,18 @@ public class Executable {
 
                 Block newBlock = new Block(MerkleRoot.computeMerkleRoot(transactions), transactions);
 
+                System.out.println("I made a new block!");
+
                 // Now that the new block has been created, the transactions have been saved in the blockchain.
                 // Reset the transactions list, so that we can save other transactions again.
                 transactions.clear();
 
                 // Get the K closest nodes to the block's merkle root hash
-                int index = calculateKBucket(newBlock.getMerkleRoot());
-                LinkedList<NodeInfo> closestNodes = getClosestNodes(newBlock.getMerkleRoot(), index);
+                int index = calculateKBucket(newBlock.getBlockID());
+                LinkedList<NodeInfo> closestNodes = getClosestNodes(newBlock.getBlockID(), index);
                 performStoreRequest(newBlock, closestNodes, cash);
+
+                System.out.println("I gossiped the block!");
             } catch (NoSuchAlgorithmException e) {
                 System.out.println("Couldn't compute new blocks. Exiting...");
                 return;
@@ -405,31 +419,42 @@ public class Executable {
         performStorePoS(newBlock, closestNodes, new LinkedList<>());
     }
 
-    // TODO: Do Proof of Stake method
     private static void proofOfStake() {
         while(true) {
-            // This node is the one generating the block
-            Node currentGenerator = netClient.generateBlock();
+            try {
+                // This node is the one generating the block
+                // Node currentGenerator = netClient.generateBlock();
 
-            if (currentGenerator.getId().equals(nodeID)) {
-                Block newBlock = new Block(MerkleRoot.computeMerkleRoot(transactions), transactions);
+                Node currentGenerator = Node.fromNodeInfo(netClient.generateBlock());
 
-                // Now that the new block has been created, the transactions have been saved in the blockchain.
-                // Reset the transactions list, so that we can save other transactions again.
-                transactions.clear();
+                if (currentGenerator.getId().equals(nodeID)) {
+                    Block newBlock = new Block(MerkleRoot.computeMerkleRoot(transactions), transactions);
 
-                netClient.blockGenerated();
+                    System.out.println("I made a block!");
 
-                // Get the K closest nodes to the block's merkle root hash
-                int index = calculateKBucket(newBlock.getMerkleRoot());
-                LinkedList<NodeInfo> closestNodes = getClosestNodes(newBlock.getMerkleRoot(), index);
-                performStorePoS(newBlock, closestNodes);
-            } else {
-                int currentBCSize = blockChain.size();
+                    // Now that the new block has been created, the transactions have been saved in the blockchain.
+                    // Reset the transactions list, so that we can save other transactions again.
+                    transactions.clear();
 
-                // This condition is met when this node receives a store request
-                while(currentBCSize == blockChain.size()) {
+                    // netClient.blockGenerated();
+
+                    netClient.generation();
+
+                    // Get the K closest nodes to the block's merkle root hash
+                    int index = calculateKBucket(newBlock.getMerkleRoot());
+                    LinkedList<NodeInfo> closestNodes = getClosestNodes(newBlock.getMerkleRoot(), index);
+                    performStorePoS(newBlock, closestNodes);
+
+                    System.out.println("I gossiped the block and passed on the generation of a new one!");
+                } else {
+                    int currentBCSize = blockChain.size();
+
+                    // This condition is met when this node receives a store request
+                    while (currentBCSize == blockChain.size()) {
+                    }
                 }
+            } catch (Exception ignored) {
+                return;
             }
         }
     }
@@ -440,11 +465,12 @@ public class Executable {
      */
     public static void main(String[] args) {
         ADDRESS = NetUtils.getLocalIP();
-        if (ADDRESS == null) {
+        if (ADDRESS == null || ADDRESS.equals("")) {
             System.out.println("Couldn't get this machine's IP address. Exiting...");
             return;
         }
 
+        // netClient = initNetworkClient();
         netClient = initNetClient();
 
         if(!netClient.ping()) {
@@ -462,7 +488,9 @@ public class Executable {
             return;
         }
 
-        NetInfo joinResult = netClient.join(work);
+        // NetInfo joinResult = netClient.join(work);
+        NetInfo joinResult = NetInfo.fromNetworkInfo(netClient.join(ADDRESS, PORT, work));
+
         if (joinResult.nodeID.equals("")) {
             System.out.println("ERROR: Couldn't join the network. Exiting...");
             return;

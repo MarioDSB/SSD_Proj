@@ -34,14 +34,14 @@ public class MerkleRoot {
 
             // Compute the hashes, grouped 2 by 2
             for (i = 0; i < threshold; i+=2) {
-                String stringA = Hashing.sha256()
+                String stringA = Hashing.sha1()
                         .hashString(transactions.get(i), StandardCharsets.UTF_8)
                         .toString();
-                String stringB = Hashing.sha256()
+                String stringB = Hashing.sha1()
                         .hashString(transactions.get(i + 1), StandardCharsets.UTF_8)
                         .toString();
 
-                String finalHash = Hashing.sha256()
+                String finalHash = Hashing.sha1()
                         .hashString(stringA + stringB, StandardCharsets.UTF_8)
                         .toString();
 
@@ -50,7 +50,7 @@ public class MerkleRoot {
 
             // If the transactions' size is odd, add the last hash to the list without grouping it with another
             if (transactions.size() % 2 != 0) {
-                String finalHash = Hashing.sha256()
+                String finalHash = Hashing.sha1()
                         .hashString(transactions.get(transactions.size() - 1), StandardCharsets.UTF_8)
                         .toString();
 
