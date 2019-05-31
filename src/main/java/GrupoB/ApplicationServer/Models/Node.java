@@ -23,7 +23,7 @@ public class Node implements Serializable {
     }
 
     public String getId() {
-        return nodeID;
+        return this.nodeID;
     }
 
     public String getAddress() {

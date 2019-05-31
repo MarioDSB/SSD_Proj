@@ -24,6 +24,13 @@ public class Block {
         this.transactions = transactions;
     }
 
+    public Block(String merkleRoot, LinkedList<String> transactions, String blockID) {
+        // We only use 1/4 of the generated uuid (Like when generating nodeIDs)
+        this.blockID = blockID;
+        this.merkleRoot = merkleRoot;
+        this.transactions = transactions;
+    }
+
     public String getBlockID() {
         return blockID;
     }
@@ -45,7 +52,7 @@ public class Block {
         for (int i = 0; i < block.getTransactionCount(); i++)
             transactions.add(block.getTransaction(i));
 
-        return new Block(block.getMerkleRoot(), transactions);
+        return new Block(block.getMerkleRoot(), transactions, block.getBlockID());
     }
 
     public static LinkedList<Block> blockListFromBlocks(Blocks blocks) {
@@ -60,8 +67,10 @@ public class Block {
     public static BlockData blockToBlockData(Block block) {
         BlockData.Builder builder = BlockData.newBuilder();
 
+        builder.setBlockID(block.blockID);
         builder.setMerkleRoot(block.merkleRoot);
-        builder.addAllTransaction(block.transactions);
+        for (int i = 0; i < block.transactions.size(); i++)
+            builder.addTransaction(block.transactions.get(i));
 
         return builder.build();
     }

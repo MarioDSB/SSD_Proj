@@ -16,6 +16,8 @@ import java.util.logging.Logger;
 public class P2PServer {
     private static final Logger logger = Logger.getLogger(P2PServer.class.getName());
 
+    public static P2PServer P2Pserver;
+
     /* The port on which the server should run */
     private final int PORT = 50052;
     private Server server;
@@ -51,10 +53,10 @@ public class P2PServer {
     /**
      * Main launches the server from the command line.
      */
-    public static void main(String[] args) throws Exception {
-        final P2PServer server = new P2PServer();
-        server.start();
-        server.blockUntilShutdown();
+    public static void run() throws Exception {
+        P2Pserver = new P2PServer();
+        P2Pserver.start();
+        P2Pserver.blockUntilShutdown();
     }
 
     private class P2PServerProtoImpl implements ClientGrpc.Client {
@@ -75,6 +77,8 @@ public class P2PServer {
          *                  of nodes that have already been contacted
          */
         private void storeImpl(StoreData storeData, boolean pow) {
+            boolean exit = false;
+
             if (pow) {
                 // Validates the generated token. If it is good, the processing continues. If it is bad,
                 // the new block is discarded and no other node is notified about it.
@@ -87,21 +91,35 @@ public class P2PServer {
                 }
             }
 
-            // Try to add the new block to the block chain, verifying that the merkle root matches the transitions
-            if (Block.blockFromBlockData(storeData.getBlock()).verifyBlock())
-                Executable.blockChain.add(Block.blockFromBlockData(storeData.getBlock()));
-            else
+            for (Block block : Executable.blockChain) {
+                if (block.getBlockID().equals(storeData.getBlock().getBlockID())) {
+                    exit = true;
+                    break;
+                }
+            }
+
+            // If this node already has the received block, stop the process.
+            if (exit) {
                 return;
+            } else {
+                Executable.blockChain.add(Block.blockFromBlockData(storeData.getBlock()));
+                System.out.println("Blocks in the chain: " + Executable.blockChain.size());
+            }
 
             LinkedList<NodeInfo> contactedNodes = Node.toNodeInfoList(storeData.getNodes());
 
             // Contact other nodes (that weren't yet contacted), to update their blockchain
-            int index = Executable.calculateKBucket(storeData.getBlock().getMerkleRoot());
-            LinkedList<NodeInfo> closestNodes = Executable.getClosestNodes(storeData.getBlock().getMerkleRoot(), index,
+            int index = Executable.calculateKBucket(storeData.getBlock().getBlockID());
+            LinkedList<NodeInfo> closestNodes = Executable.getClosestNodes(storeData.getBlock().getBlockID(), index,
                     contactedNodes);
 
-            Executable.performStoreRequest(Block.blockFromBlockData(storeData.getBlock()), closestNodes,
-                    contactedNodes, storeData.getCash());
+            if (pow)
+                Executable.performStoreRequest(Block.blockFromBlockData(storeData.getBlock()), closestNodes,
+                        contactedNodes, storeData.getCash());
+            else {
+                Executable.performStorePoS(Block.blockFromBlockData(storeData.getBlock()), closestNodes,
+                        contactedNodes);
+            }
         }
 
         @Override
@@ -109,12 +127,10 @@ public class P2PServer {
             logger.info("Receiving STORE request. Processing...");
             Executable.transactions.add("Receiving STORE request. Processing...");
 
+            storeImpl(request, true);
+
             responseObserver.onNext(EmptyMessage.newBuilder().build());
             responseObserver.onCompleted();
-
-            // Contact other nodes AFTER responding to the sender. That way, the sender can continue working
-            // without having to wait for the block to be propagated to the entire network
-            storeImpl(request, true);
         }
 
         @Override
@@ -122,26 +138,28 @@ public class P2PServer {
             logger.info("Receiving STORE request. Processing...");
             Executable.transactions.add("Receiving STORE request. Processing...");
 
+            storeImpl(request, false);
+
             responseObserver.onNext(EmptyMessage.newBuilder().build());
             responseObserver.onCompleted();
-
-            // Contact other nodes AFTER responding to the sender. That way, the sender can continue working
-            // without having to wait for the block to be propagated to the entire network
-            storeImpl(request, false);
         }
 
-        private Nodes findNodeImpl(NodeInfo nodeID) {
-            // Try to add the new connection to the kBuckets
-            Executable.addToKBucket(Node.fromNodeInfo(nodeID));
-
+        private Nodes findNodeImpl(NodeInfo node) {
             Nodes.Builder builder = Nodes.newBuilder();
 
             // Finds the kBucket with the closest nodes to nodeID
-            int index = Executable.calculateKBucket(nodeID.getNodeID());
+            int index = Executable.calculateKBucket(node.getNodeID());
 
-            LinkedList<NodeInfo> closestNodes = Executable.getClosestNodes(nodeID.getNodeID(), index);
-            for (int i = 0; i < closestNodes.size(); i++)
-                builder.setNodes(i, closestNodes.get(i));
+            LinkedList<NodeInfo> contactedNodes = new LinkedList<>();
+            contactedNodes.add(node);
+
+            LinkedList<NodeInfo> closestNodes = Executable.getClosestNodes(node.getNodeID(), index, contactedNodes);
+            System.out.println("#Closest nodes: " + closestNodes.size());
+
+            builder.addAllNodes(closestNodes);
+
+            // Try to add the new connection to the kBuckets
+            Executable.addToKBucket(Node.fromNodeInfo(node));
 
             return builder.build();
         }

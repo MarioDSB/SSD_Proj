@@ -7,6 +7,7 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -19,11 +20,11 @@ public class CentralServer {
 
     private List<NodeInfo> nodes = new LinkedList<>();
 
-    private NodeInfo generator;
+    private NodeInfo generator = null;
 
     // True, if the network is using Proof of Work (PoW).
     // False, if the network is using Proof of Stake (PoS).
-    private boolean pow = true;
+    private static boolean pow = true;
 
     private void start() throws Exception {
         server = ServerBuilder.forPort(PORT)
@@ -53,10 +54,36 @@ public class CentralServer {
         }
     }
 
+    private static void showUI() {
+        System.out.println("Choose proof module:");
+        System.out.println("1: Proof of Work");
+        System.out.println("2: Proof of Stake");
+    }
+
     /**
      * Main launches the server from the command line.
      */
     public static void main(String[] args) throws Exception {
+        Scanner in = new Scanner(System.in);
+        int choice;
+
+        do {
+            showUI();
+            choice = in.nextInt();
+            switch (choice) {
+                case 1:
+                    pow = true;
+                    break;
+                case 2:
+                    pow = false;
+                    break;
+                default:
+                    System.out.println("Option not supported. Choose 1 or 2.");
+                    break;
+            }
+
+        } while (choice < 1 || choice > 2);
+
         final CentralServer server = new CentralServer();
         server.start();
         server.blockUntilShutdown();
@@ -114,6 +141,8 @@ public class CentralServer {
 
             // Add the "new" node to the nodes' list
             nodes.add(newNode);
+            if (nodes.size() == 1)
+                generator = newNode;
 
             logger.info("Number of connected nodes: " + nodes.size());
 
@@ -130,20 +159,7 @@ public class CentralServer {
         }
 
         private NodeInfo genImpl() {
-            NodeInfo.Builder builder = NodeInfo.newBuilder();
-
-            if (nodes.size() == 1) {
-                NodeInfo node = nodes.get(0);
-
-                generator = node;
-
-                return builder.setAddress(node.getAddress())
-                        .setPort(node.getPort())
-                        .setNodeID(node.getNodeID())
-                        .build();
-            } else {
-                return generator;
-            }
+            return generator;
         }
 
         @Override
@@ -163,9 +179,21 @@ public class CentralServer {
          */
         @Override
         public void generation(EmptyMessage request, StreamObserver<BooleanMessage> responseObserver) {
+            logger.log(Level.INFO, "Block created. Setting new generator...");
+
+            try {
+                TimeUnit.SECONDS.sleep(5);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
             int generatorIndex = getRandomNumberInRange(nodes.size() - 1);
 
             generator = nodes.get(generatorIndex);
+            System.out.println("Generator: " + generator.getNodeID());
+
+            responseObserver.onNext(BooleanMessage.newBuilder().setResult(true).build());
+            responseObserver.onCompleted();
         }
 
         @Override

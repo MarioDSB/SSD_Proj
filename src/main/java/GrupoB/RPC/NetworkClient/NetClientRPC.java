@@ -50,19 +50,23 @@ public class NetClientRPC {
 
     /** Ping the server */
     public boolean ping() {
-        Boolean response = getABoolean("Will try to ping the central server...");
+        Boolean response = getABoolean("Will try to ping the central server...", true);
         if (response != null) return response;
 
         return false;
     }
 
-    private Boolean getABoolean(String s) {
+    private Boolean getABoolean(String s, boolean ping) {
         try {
             logger.info(s);
             Executable.transactions.add(s);
 
             EmptyMessage request = EmptyMessage.newBuilder().build();
-            BooleanMessage response = blockingStub.ping(request);
+            BooleanMessage response;
+            if (ping)
+                response = blockingStub.ping(request);
+            else
+                response = blockingStub.generation(request);
 
             return response.getResult();
         } catch (RuntimeException re) {
@@ -110,7 +114,8 @@ public class NetClientRPC {
     }
 
     public boolean generation() {
-        Boolean response = getABoolean("Will try to signal the central server that a block was generated...");
+        Boolean response = getABoolean("Will try to signal the central server that a block was generated...",
+                false);
         if (response != null) return response;
 
         return false;

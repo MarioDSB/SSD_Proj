@@ -31,8 +31,9 @@ message StoreData {
 }
 
 message BlockData {
-    string merkleRoot = 1;
-    repeated string transaction = 2;
+    string blockID = 1;
+    string merkleRoot = 2;
+    repeated string transaction = 3;
 }
 
 message NodeID {
