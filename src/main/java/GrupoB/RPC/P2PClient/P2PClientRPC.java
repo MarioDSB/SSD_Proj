@@ -89,8 +89,8 @@ public class P2PClientRPC {
 
     public void store(BlockData newBlock, Nodes contactedNodes, String cash) {
         try {
-            logger.info("Will try to send a request to store (PoS) a block...");
-            Executable.transactions.add("Will try to send a request to store (PoS) a block...");
+            logger.info("Will try to send a request to store a block...");
+            Executable.transactions.add("Will try to send a request to store a block...");
 
             StoreData request = StoreData.newBuilder()
                     .setBlock(newBlock)

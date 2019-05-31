@@ -95,9 +95,9 @@ public class Executable {
 
         int i;
         for (i = peerIndex; i < kBuckets[index].size(); i++)
-            kBuckets[index].add(i, kBuckets[index].get(i + 1));
+            kBuckets[index].set(i, kBuckets[index].get(i + 1));
 
-        kBuckets[index].add(i, peer);
+        kBuckets[index].set(i, peer);
     }
 
     /**
