@@ -191,6 +191,11 @@ public class Executable {
             List<NodeInfo> nodeQueue = new LinkedList<>();
 
             List<NodeInfo> response = p2pClient.findNode(ADDRESS, PORT, nodeID);
+            if (response == null) {
+                System.out.println("Wasn't able to join the network. Exiting...");
+                System.exit(0);
+            }
+
             System.out.println("#Response nodes: " + response.size());
             if (response.size() != 0) {
                 contactedNodes.add(joinResult.peer.getId());

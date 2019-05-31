@@ -63,8 +63,23 @@ public class P2PClientRPC {
 
             return blockingStub.findNode(request).getNodesList();
         } catch (RuntimeException re) {
-            Executable.transactions.add("RPC failed");
-            logger.log(Level.WARNING, "RPC failed", re);
+            Executable.transactions.add("RPC failed. Trying again.");
+            logger.log(Level.WARNING, "RPC failed. Trying again.", re);
+
+            try {
+                logger.info("Will try to find node " + nodeID + "...");
+                Executable.transactions.add("Will try to find node " + nodeID + "...");
+                NodeInfo request = NodeInfo.newBuilder()
+                        .setAddress(address)
+                        .setPort(port)
+                        .setNodeID(nodeID)
+                        .build();
+
+                return blockingStub.findNode(request).getNodesList();
+            } catch (RuntimeException re2) {
+                Executable.transactions.add("RPC failed. Trying again.");
+                logger.log(Level.WARNING, "RPC failed. Trying again.", re2);
+            }
         }
 
         return null;
