@@ -21,7 +21,8 @@ public class Executable {
     private final static int PORT = 50052;
 
     // private static String SERVER_ADDRESS = "localhost";
-    private static String SERVER_ADDRESS = "10.164.0.2";
+    // private static String SERVER_ADDRESS = "10.164.0.2";
+    private static String SERVER_ADDRESS = "10.132.0.4";
     private static int SERVER_PORT = 50051;
 
     // Maximum contacts stored in a kBucket
@@ -513,6 +514,10 @@ public class Executable {
      * @param args No arguments need to be provided
      */
     public static void main(String[] args) {
+        Scanner in = new Scanner(System.in);
+        System.out.println("Enter the tracker's IP:");
+        SERVER_ADDRESS = in.nextLine();
+
         ADDRESS = NetUtils.getLocalIP();
         if (ADDRESS == null || ADDRESS.equals("")) {
             System.out.println("Couldn't get this machine's IP address. Exiting...");
